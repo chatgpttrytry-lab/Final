@@ -5148,7 +5148,7 @@ window.addEventListener("load",()=>{updateRecycleCount();loadInvoiceDisplaySetti
 <div class="db-billing-overlay" id="billing-overlay" aria-hidden="true">
   <div class="db-billing-window">
     <div class="db-billing-header">
-      <div><div class="db-billing-title">🛒 Billing</div><div class="db-billing-sub">Select items → make bill → generate invoice</div><div class="billing-live-meta"><span>📅 <b id="billing-live-date">--/--/--</b></span><span>🕐 <b id="billing-live-time">--:--:--</b></span><span>🧾 Bill No <b id="billing-live-bill">1</b></span></div><button id="billing-printer-status" class="billing-printer-status" onclick="openPrinterPanel()" type="button" aria-label="Printer connection status">🔴 Printer: Not connected</button></div>
+      <div class="billing-header-left"><div class="billing-header-main"><div class="billing-header-copy"><div class="db-billing-title">🛒 Billing</div><div class="db-billing-sub">Select items → make bill → generate invoice</div><div class="billing-live-meta"><span>📅 <b id="billing-live-date">--/--/--</b></span><span>🕐 <b id="billing-live-time">--:--:--</b></span><span>🧾 Bill No <b id="billing-live-bill">1</b></span></div></div><button id="billing-previous-bill" class="billing-previous-bill" type="button" onclick="openPreviousBillingBill()" aria-label="View previous bill"><span class="billing-previous-label">PREVIOUS BILL</span><strong id="billing-previous-amount">₹ 0</strong><small id="billing-previous-number">No previous bill</small></button></div><button id="billing-printer-status" class="billing-printer-status" onclick="openPrinterPanel()" type="button" aria-label="Printer connection status">🔴 Printer: Not connected</button></div>
       <button class="close-history" onclick="closeBilling()">✕</button>
     </div>
     <div class="db-billing-body">
@@ -6262,6 +6262,7 @@ function restoreBillingPartyFromRecovery(recovery){
 }
 
 async function openBilling(){
+  try{if(typeof refreshPreviousBillingBillButton==='function')refreshPreviousBillingBillButton();}catch(e){}
   try{if(window.__billingRecoveryStorageReady)await window.__billingRecoveryStorageReady;}catch(e){}
   // Crash/accidental-close recovery is based on the durable Billing recovery
   // snapshot, not on a browser lifecycle event or the unfinished marker alone.
@@ -12435,6 +12436,50 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 }
 </style>
+
+
+<style id="billing-previous-bill-button-style">
+#billing-overlay .billing-header-left{flex:1;min-width:0}
+#billing-overlay .billing-header-main{display:flex;align-items:stretch;gap:7px;min-width:0}
+#billing-overlay .billing-header-copy{flex:1;min-width:0}
+#billing-overlay .billing-previous-bill{flex:0 0 104px;min-width:90px;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border:1px solid #25d366;border-radius:10px;background:linear-gradient(145deg,#159447,#087536);color:#fff;box-shadow:0 2px 7px #0003;cursor:pointer;white-space:normal}
+#billing-overlay .billing-previous-label{font-size:8px;font-weight:900;line-height:1.1}
+#billing-overlay .billing-previous-bill strong{font-size:17px;font-weight:900;line-height:1.15}
+#billing-overlay .billing-previous-bill small{font-size:8px;font-weight:800;line-height:1.1;overflow-wrap:anywhere}
+#billing-overlay .billing-previous-bill:active{transform:scale(.98)}
+@media(max-width:520px){#billing-overlay .billing-header-main{gap:5px}#billing-overlay .billing-previous-bill{flex-basis:92px;min-width:84px;padding:4px 3px}#billing-overlay .billing-previous-bill strong{font-size:15px}#billing-overlay .billing-previous-label,#billing-overlay .billing-previous-bill small{font-size:7px}}
+</style>
+<script id="billing-previous-bill-button-script">
+function refreshPreviousBillingBillButton(){
+  const btn=document.getElementById('billing-previous-bill');if(!btn)return;
+  let records=[];try{records=typeof getHistory==='function'?getHistory('pos'):JSON.parse(localStorage.getItem('pos-billing-history')||'[]')}catch(e){records=[]}
+  const previous=(Array.isArray(records)?records:[]).filter(x=>x&&(x.bill||Array.isArray(x.items))&&Number.isFinite(Number(x.amount))).sort((a,b)=>new Date(b.time||0)-new Date(a.time||0))[0];
+  const amount=document.getElementById('billing-previous-amount'),number=document.getElementById('billing-previous-number');
+  if(!previous){if(amount)amount.textContent='₹ 0';if(number)number.textContent='No previous bill';btn.setAttribute('aria-label','No previous bill available');return}
+  if(amount)amount.textContent='₹ '+Number(previous.amount||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+  if(number)number.textContent=String(previous.bill||'Previous bill');
+  btn.setAttribute('aria-label','View previous bill '+String(previous.bill||'')+' amount ₹ '+Number(previous.amount||0));
+}
+function openPreviousBillingBill(){
+  let records=[];
+  try{records=typeof getHistory==='function'?getHistory('pos'):JSON.parse(localStorage.getItem('pos-billing-history')||'[]')}catch(e){records=[]}
+  const previous=(Array.isArray(records)?records:[])
+    .filter(x=>x&&(x.bill||Array.isArray(x.items))&&x.id!=null&&Number.isFinite(Number(x.amount)))
+    .sort((a,b)=>new Date(b.time||0)-new Date(a.time||0))[0];
+  if(!previous){refreshPreviousBillingBillButton();return}
+  if(typeof openPOSHistory==='function'&&typeof showDetails==='function'){
+    openPOSHistory();
+    const detailOverlay=document.getElementById('detail-overlay');
+    // Billing window uses z-index 500, so keep the previous-bill details above it.
+    if(detailOverlay)detailOverlay.style.zIndex='501';
+    window.setTimeout(function(){
+      showDetails(previous.id);
+      if(detailOverlay&&detailOverlay.classList.contains('open'))detailOverlay.style.zIndex='501';
+    },0);
+  }
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshPreviousBillingBillButton,{once:true});else refreshPreviousBillingBillButton();
+</script>
 
 </body>
 </html>
