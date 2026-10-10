@@ -7556,6 +7556,9 @@ function saveBillingBillOnly(showAlert=true){
     else {history.unshift(h);advanceBillNumberAfterSave(bill,'billing');}
 
     localStorage.setItem(POS_BILLING_HISTORY_KEY,JSON.stringify(history.slice(0,2000)));
+    // Refresh the Previous Bill button only after a bill has been successfully saved.
+    // This updates the displayed amount/number immediately without reacting to cart edits.
+    try{if(typeof refreshPreviousBillingBillButton==='function')refreshPreviousBillingBillButton();}catch(refreshError){console.warn('Previous Bill button refresh failed',refreshError);}
     partyLinkBillToLedger(h, h.partyId);
     editingBillingHistoryId=null;
 
