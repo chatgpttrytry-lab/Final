@@ -1313,6 +1313,13 @@ body.dark #billing-overlay button {
 }
 #billing-overlay .db-search-row > .db-small-btn:active{transform:scale(.97);}
 </style>
+
+<style id="qr-size-final-override">
+/* Final QR size override: only the main calculator QR code is enlarged. */
+#qrcode.qr-box canvas, #qrcode.qr-box img { width:210px!important; height:210px!important; max-width:100%!important; object-fit:contain!important; }
+@media(max-height:680px){#qrcode.qr-box canvas, #qrcode.qr-box img { width:175px!important; height:175px!important; max-width:100%!important; }}
+</style>
+
 </head>
 <body class="home-mode">
 <!-- COUPON VOUCHER MOVED TO HOME SCREEN AS TOP-LEVEL WINDOW; EXISTING DESIGN/PRINT LOGIC REUSED -->
