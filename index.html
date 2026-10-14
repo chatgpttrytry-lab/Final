@@ -4466,6 +4466,9 @@ function invoiceStudioRenderPreview(){
     x=getInvoicePreviewPartySnapshot(x);
     /* Design Window display switches are the source of truth for Preview. */
     const displaySettings={...st,...(x.displaySettings||{})};
+    if(invoiceCustomizationMode==='billing'){
+      displaySettings.qr = shouldShowInvoiceQRForPayment(billingPaymentMode) && isValidUpiId(x.upi||'');
+    }
     const previewSt=displaySettings;
     /* IMPORTANT: Preview uses the exact same physical text builder as Bluetooth/ESC-POS print. */
     let text=buildPhysicalInvoiceText({...x,displaySettings:displaySettings});
@@ -4915,8 +4918,9 @@ function makeCustomizedReceiptBytes(x){
   const mode=(x&&x.settingsMode)?(x.settingsMode==='billing'?'billing':'calculator'):(invoiceCustomizationMode==='billing'?'billing':'calculator');
   try{loadInvoiceDisplaySettings(mode);}catch(e){}
   const st=invoiceStudioResolveFinalSettings(mode,(x&&x.displaySettings&&typeof x.displaySettings==='object')?x.displaySettings:getInvoiceDisplaySettings(mode));
-  const W=String(st.paper||'58')==='80'?48:32;
   const paymentMode=String(x&&x.paymentMode||billingPaymentMode||'Cash');
+  if(mode==='billing') st.qr = shouldShowInvoiceQRForPayment(paymentMode) && isValidUpiId(String(x&&x.upi||''));
+  const W=String(st.paper||'58')==='80'?48:32;
   const text=buildPhysicalInvoiceText({...x,displaySettings:st});
   const upi=x.upi||'';
   const init=new Uint8Array([0x1b,0x40]),center=new Uint8Array([0x1b,0x61,0x01]),left=new Uint8Array([0x1b,0x61,0x00]),boldOn=new Uint8Array([0x1b,0x45,0x01]),boldOff=new Uint8Array([0x1b,0x45,0x00]),feed=new Uint8Array([0x1b,0x64,0x05]),cut=new Uint8Array([0x1d,0x56,0x00]);
@@ -5608,10 +5612,30 @@ const savedBillingChargeTreatment = String(localStorage.getItem('upi-billing-cha
 let billingChargeTreatment = savedBillingChargeTreatment === 'exclude' ? 'exclude' : 'include';
 let billingReceived = Number(localStorage.getItem("upi-billing-received") || 0) || 0;
 let billingLoyaltyRedeemPoints = 0;
+const BILLING_QR_MODE_STORAGE_KEYS = Object.freeze({
+  "Cash":"upi-billing-qr-print-cash",
+  "UPI":"upi-billing-qr-print-upi",
+  "Credit Card":"upi-billing-qr-print-credit-card",
+  "MDR":"upi-billing-qr-print-mdr"
+});
+function getBillingQrPrintSetting(mode){
+  const m=String(mode||billingPaymentMode||"Cash");
+  const key=BILLING_QR_MODE_STORAGE_KEYS[m] || BILLING_QR_MODE_STORAGE_KEYS.Cash;
+  try{
+    const saved=localStorage.getItem(key);
+    if(saved===null || saved==='') return m!=='Cash';
+    return saved==='true';
+  }catch(e){ return m!=='Cash'; }
+}
+function saveBillingQrPrintSetting(mode,enabled){
+  const m=String(mode||"Cash");
+  const key=BILLING_QR_MODE_STORAGE_KEYS[m] || BILLING_QR_MODE_STORAGE_KEYS.Cash;
+  try{localStorage.setItem(key,enabled?'true':'false');}catch(e){}
+  return !!enabled;
+}
 function shouldShowInvoiceQRForPayment(mode){
-  // Payment mode controls the QR on the PHYSICAL 58mm invoice:
-  // Cash = OFF; UPI/Credit Card = ON.
-  return String(mode||billingPaymentMode||"Cash") !== "Cash";
+  // Payment mode controls the QR on both the invoice preview and physical 58mm invoice.
+  return getBillingQrPrintSetting(mode);
 }
 function syncPhysicalInvoiceQRForPayment(){
   const enabled=shouldShowInvoiceQRForPayment(billingPaymentMode);
@@ -5741,6 +5765,7 @@ function openBillingModeEdit(mode){
   body.innerHTML=`
     <div class="billing-mode-edit-field"><label>${isCash?'CASH UPI ID':'QR ID / UPI ID'}</label><input id="billing-mode-edit-upi" type="text" value="${escapeHtml(upiValue||'')}" placeholder="${isCash?'cash@upi':'yourname@upi'}" autocomplete="off" spellcheck="false"></div>
     ${isCash?'':'<div class="billing-mode-edit-field"><label>'+m+' CHARGE / QR SETTING</label>'+(isUpi?'<div class="billing-mode-edit-note" style="margin:0">UPI payment uses the saved UPI ID. No extra charge is added.</div>':'<input id="billing-mode-edit-charge" type="number" min="0" max="100" step="0.01" value="'+Number(charge||0)+'" inputmode="decimal">')+'</div>'}
+    <div class="billing-mode-edit-field"><label>QR PRINT</label><label style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text);font-size:12px;font-weight:900;cursor:pointer"><span>🧾 Print QR on Invoice</span><input id="billing-mode-edit-qr" type="checkbox" ${getBillingQrPrintSetting(m)?'checked':''} style="width:20px;height:20px;accent-color:var(--blue);flex:0 0 auto" aria-label="${escapeHtml(m)} Print QR on Invoice"></label></div>
     <div class="billing-mode-edit-field"><label>Offer / Message (Optional)</label><input id="billing-mode-edit-message" type="text" maxlength="120" value="${escapeHtml(message)}" placeholder="e.g. 🎁 Pay &amp; Get 10% OFF" autocomplete="off" spellcheck="false" aria-label="${escapeHtml(m)} Offer or Message"></div>
     <div class="billing-mode-edit-note">${isCash?'Cash payment message is saved only for Cash.':isUpi?'UPI message is also sent as the QR transaction note (tn).':isCard?'Credit Card message is saved separately for Credit Card.':'MDR message is saved separately for MDR.'}</div>
     <div class="billing-mode-edit-actions"><button type="button" class="billing-mode-edit-cancel" onclick="closeBillingModeEdit()">Cancel</button><button type="button" class="billing-mode-edit-save" onclick="saveBillingModeEdit('${m}')">💾 Save</button></div>`;
@@ -5755,6 +5780,7 @@ function saveBillingModeEdit(mode){
   const m=String(mode||'Cash');
   const message=String(document.getElementById('billing-mode-edit-message')?.value||'').trim().slice(0,120);
   const upi=String(document.getElementById('billing-mode-edit-upi')?.value||'').trim();
+  const qrPrint=!!document.getElementById('billing-mode-edit-qr')?.checked;
   // UPI settings must contain a real UPI ID; otherwise the QR can be silently invalid.
   if(upi && !isValidUpiId(upi)){
     alert('Please enter a valid UPI ID, e.g. name@bank');
@@ -5784,8 +5810,9 @@ function saveBillingModeEdit(mode){
     persistBillingModeUpi('MDR',billingMdrUpi);
     localStorage.setItem('upi-mdr-charge',String(billingMdrCharge));
   }
-  // Save the validated Offer / Message only for this Billing payment mode.
+  // Save the validated Offer / Message and QR print setting only for this Billing payment mode.
   saveBillingOfferMessage(m,message);
+  saveBillingQrPrintSetting(m,qrPrint);
   closeBillingModeEdit();
   setBillingPaymentModeQuick(m);
   loadUPISettings(); loadCreditCardSettings(); updateBillingPayment(); renderBillingCart(); renderBillingPayment();
@@ -7970,6 +7997,7 @@ function renderPOSInvoice58Preview(){
   // Preview uses the same character-grid text builder as the physical ESC/POS
   // receipt, so enabled columns, wrapping, summary labels and spacing match paper.
   const physicalSt=invoiceStudioResolveFinalSettings('billing',getInvoiceDisplaySettings('billing'));
+  physicalSt.qr = shouldShowInvoiceQRForPayment(billingPaymentMode) && isValidUpiId(upi);
   const physicalInvoice={mrpTotal:mrp,billTotal:total,subtotal:mrp,discount,loyaltyRedeemAmount,total,upi,paymentMode:billingPaymentMode,settingsMode:'billing',partyId:partyForPreview?.id||'',partyName:partyForPreview?.name||'',partyMobile:partyForPreview?.mobile||'',partyAddress:partyForPreview?.address||'',displaySettings:physicalSt,chargeTreatment:billingChargeTreatment,paymentCharge};
   const physicalText=buildPhysicalInvoiceText(physicalInvoice);
   const physicalTextNoQr=physicalText.replace(/\n--- SCAN & PAY ---\nUPI ID: .*\nPay using any UPI app\n/,'');
