@@ -1621,6 +1621,26 @@ div>
   </div>
 </div>
 <div class="party-receive-overlay" id="party-receive-overlay" aria-hidden="true"><div class="party-receive-card"><div class="party-receive-head"><div class="party-receive-title">RECEIVE PAYMENT</div><div class="party-receive-sub" id="party-receive-customer">Customer</div></div><div class="party-receive-body"><div class="party-receive-current"><span>CURRENT DUE</span><b id="party-receive-due">₹ 0</b></div><div class="party-field"><label>Payment Amount</label><input id="party-receive-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div><div class="party-field"><label>Payment Mode</label><select id="party-receive-mode" style="width:100%;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);padding:0 10px;font-weight:800"><option>Cash</option><option>UPI</option><option>Credit Card</option><option>MDR</option></select></div><div class="party-field"><label>Note</label><textarea id="party-receive-note" placeholder="Note"></textarea></div></div><div class="party-receive-actions"><button class="party-cancel" onclick="closePartyReceivePayment()">CANCEL</button><button class="party-receive-save" onclick="savePartyReceivePayment()">SAVE PAYMENT</button></div></div></div>
+<style id="calculator-window-shortcuts-css">
+.calculator-window-shortcuts{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  padding:2px 18px 2px;flex:none;
+}
+.calculator-window-shortcuts button{
+  min-width:0;height:36px;padding:0 8px;border:1px solid var(--border);
+  border-radius:11px;background:var(--blue2);color:var(--blue);
+  font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;
+  touch-action:manipulation;
+}
+@media(max-width:360px){
+  .calculator-window-shortcuts{gap:6px;padding-left:12px;padding-right:12px}
+  .calculator-window-shortcuts button{font-size:11px;padding:0 4px}
+}
+@media(max-height:680px){
+  .calculator-window-shortcuts button{height:30px;font-size:11px}
+}
+</style>
+
 <div class="app-container">
     <button class="calculator-window-close" onclick="saGoHome()" title="Close Calculator" aria-label="Close Calculator">✕</button>
     <div class="topbar"><div class="top-actions"><button class="calculator-close-btn" onclick="saGoHome()" title="Close Calculator" aria-label="Close Calculator">✕</button><button class="printer-btn" onclick="openBarcodeStudio()" title="Barcode Studio" aria-label="Barcode Studio">🏷️</button><button class="printer-btn" onclick="openItemDatabase()" aria-label="Item database" title="Items">📦</button><button class="printer-btn" onclick="openNotebook()" aria-label="Note Book" title="Note Book">📒</button><button class="printer-btn" onclick="openBilling()" aria-label="Billing" title="Billing">🛒</button><button class="printer-btn" onclick="openSafeDataWindow()" aria-label="Data Backup & Restore" title="Data Backup & Restore">💾</button><button class="printer-btn" onclick="openCloudBackupWindow()" aria-label="Google Drive Cloud Backup" title="Google Drive Cloud Backup">☁️</button><button class="printer-btn" onclick="openInvoiceButton()" aria-label="Invoice" title="Invoice">🧾</button><button class="printer-btn" onclick="openPrinterPanel()" aria-label="Bluetooth printer" title="Print">🖨️</button><button class="history-btn" onclick="openHistory()" aria-label="Open Invoice & Payment History" title="Invoice & Payment History">📋</button><button class="theme-btn" id="legacy-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Theme">☀️</button></div></div>
@@ -1652,6 +1672,11 @@ div>
             <div id="display-expr-colored" aria-hidden="true"></div>
         </div>
         <div class="result-preview" id="display-res"></div>
+    </div>
+
+    <div class="calculator-window-shortcuts" aria-label="Calculator shortcuts">
+        <button type="button" onclick="window.calculatorNavReturnMode='calculator';openPOSHistory();openCalculatorHistory()" aria-label="Calculator History" title="Calculator History">🕘 Calculator History</button>
+        <button type="button" onclick="window.invoiceStudioReturnMode='calculator';openInvoiceButton()" aria-label="Calculator Studio" title="Calculator Studio">🧮 Calculator Studio</button>
     </div>
 
     <div class="keypad">
@@ -2308,8 +2333,12 @@ function toggleTheme(){
     function historyKey(source){ return source === "calculator" ? CALCULATOR_HISTORY_KEY : POS_BILLING_HISTORY_KEY; }
     function getHistory(source){
         const key=historyKey(source || historySource);
-        try { return JSON.parse(localStorage.getItem(key) || "[]"); }
-        catch(e) { return []; }
+        try {
+            const data = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(data) ? data : [];
+        } catch(e) {
+            return [];
+        }
     }
     function saveHistoryRecords(history,source){
         localStorage.setItem(historyKey(source || historySource),JSON.stringify((history||[]).slice(0,2000)));
@@ -2537,8 +2566,13 @@ function toggleTheme(){
     }
 
     function closeHistory(){
-        document.getElementById("history-overlay").classList.remove("open");
-        document.getElementById("history-overlay").setAttribute("aria-hidden","true");
+        const historyReturnMode=window.calculatorNavReturnMode; window.calculatorNavReturnMode=null;
+        const historyOverlay=document.getElementById("history-overlay");
+        historyOverlay.classList.remove("open");
+        historyOverlay.setAttribute("aria-hidden","true");
+        historyOverlay.style.zIndex="";
+        if(historyReturnMode==='home') document.body.classList.add("home-mode");
+        else if(historyReturnMode==='calculator') document.body.classList.remove("home-mode");
     }
 
     document.getElementById("history-overlay").addEventListener("click", function(e){
@@ -4108,7 +4142,8 @@ function openInvoiceButton(){
       o.setAttribute('aria-hidden','false');
       try{
         const up=document.getElementById('invoice-upi-input'); if(up) up.value=upiInput.value.trim()||'';
-        const bi=document.getElementById('invoice-bill-input'); if(bi) bi.value=getSavedBillNo('billing');
+        // This button opens Calculator Invoice, so recover the Calculator bill number.
+        const bi=document.getElementById('invoice-bill-input'); if(bi) bi.value=getSavedBillNo('calculator');
         renderInvoiceItems();
       }catch(e){ console.error('Calculator Invoice fallback error',e); }
     }
@@ -4132,6 +4167,11 @@ function switchInvoiceCustomizerMode(mode){
   return openInvoiceCustomizer(requested);
 }
 function openInvoiceCustomizer(mode='calculator'){
+  if(mode==='calculator' && !window.invoiceStudioReturnMode){
+    const historyOpen=!!document.getElementById('history-overlay')?.classList.contains('open');
+    const billingOpen=!!document.getElementById('billing-overlay')?.classList.contains('open');
+    window.invoiceStudioReturnMode=historyOpen?'history':(billingOpen?'billing':(document.body.classList.contains('home-mode')?'home':'calculator'));
+  }
   document.querySelector('.invoice-custom-window')?.classList.remove('print-tab-active');
   invoiceCustomizationMode=mode==='billing'?'billing':'calculator';
   if(window.invoiceStudioUpdateCouponButton)window.invoiceStudioUpdateCouponButton();
@@ -4196,6 +4236,10 @@ function openInvoiceCustomizer(mode='calculator'){
 }
 function closeInvoiceCustomizer(){
   if(invoiceEditSnapshot){restoreInvoiceEditSnapshot();invoiceEditSnapshot=null;editingHistoryId=null;}
+  const returnMode=window.invoiceStudioReturnMode;
+  window.invoiceStudioReturnMode=null;
+  if(returnMode==='calculator') document.body.classList.remove('home-mode');
+  else if(returnMode==='home') document.body.classList.add('home-mode');
   const o=document.getElementById('invoice-custom-overlay');
   o.classList.remove('open');o.setAttribute('aria-hidden','true');o.style.zIndex='';
   // Billing remains open underneath when customization was launched from POS.
@@ -5155,7 +5199,7 @@ window.addEventListener("load",()=>{updateRecycleCount();loadInvoiceDisplaySetti
 <div class="db-billing-overlay" id="billing-overlay" aria-hidden="true">
   <div class="db-billing-window">
     <div class="db-billing-header">
-      <div class="billing-header-left"><div class="billing-header-main"><div class="billing-header-copy"><div class="db-billing-title">🛒 Billing</div><div class="db-billing-sub">Select items → make bill → generate invoice</div><div class="billing-live-meta"><span>📅 <b id="billing-live-date">--/--/--</b></span><span>🕐 <b id="billing-live-time">--:--:--</b></span><span>🧾 Bill No <b id="billing-live-bill">1</b></span></div></div><button id="billing-previous-bill" class="billing-previous-bill" type="button" onclick="openPreviousBillingBill()" aria-label="View previous bill"><span class="billing-previous-label">PREVIOUS BILL</span><strong id="billing-previous-amount">₹ 0</strong><small id="billing-previous-number">No previous bill</small></button></div><button id="billing-printer-status" class="billing-printer-status" onclick="openPrinterPanel()" type="button" aria-label="Printer connection status">🔴 Printer: Not connected</button></div>
+      <div class="billing-header-left"><div class="billing-header-main"><div class="billing-header-copy"><div class="db-billing-title">🛒 Billing</div><div class="db-billing-sub">Select items → make bill → generate invoice</div><div class="billing-live-meta"><span>📅 <b id="billing-live-date">--/--/--</b></span><span>🕐 <b id="billing-live-time">--:--:--</b></span><span>🧾 Bill No <b id="billing-live-bill">1</b></span></div></div><div id="billing-header-shortcuts" class="billing-header-shortcuts"><button id="billing-open-studio-shortcut" class="billing-header-shortcut billing-studio-shortcut" type="button" onclick="openBillingStudioShortcut()" aria-label="Open POS Billing Studio"><span>🧾 POS STUDIO</span></button><button id="billing-open-history-shortcut" class="billing-header-shortcut billing-history-shortcut" type="button" onclick="openBillingInvoiceHistoryShortcut()" aria-label="Open POS Invoice History"><span>📋 INVOICE HISTORY</span></button></div><button id="billing-previous-bill" class="billing-previous-bill" type="button" onclick="openPreviousBillingBill()" aria-label="View previous bill"><span class="billing-previous-label">PREVIOUS BILL</span><strong id="billing-previous-amount">₹ 0</strong><small id="billing-previous-number">No previous bill</small></button></div><button id="billing-printer-status" class="billing-printer-status" onclick="openPrinterPanel()" type="button" aria-label="Printer connection status">🔴 Printer: Not connected</button></div>
       <button class="close-history" onclick="closeBilling()">✕</button>
     </div>
     <div class="db-billing-body">
@@ -10184,6 +10228,9 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
   const parentIds=['history-overlay','analytics-overlay','analytics-profit-detail-overlay','recycle-overlay','qr-choice-overlay','invoice-custom-overlay','pos-invoice-preview-overlay','analytics-item-overlay','detail-overlay','printer-panel','item-db-overlay','billing-new-item-modal','billing-mode-edit-overlay','billing-overlay','billing-drafts-overlay','safeDataModal','notebook-overlay','notebook-form-overlay','notebook-party-picker-overlay','notebook-party-overlay','notebook-party-detail-overlay','notebook-all-items-overlay','notebook-recycle-overlay','cloudBackupModal','party-overlay','party-form-overlay','party-detail-overlay','party-receive-overlay','coupon-voucher-overlay'];
   function hideHome(){document.body.classList.remove('home-mode');}
   window.saLaunch=function(type){
+    if(type==='calculator-studio') window.invoiceStudioReturnMode='home';
+    if(type==='pos-studio') window.invoiceStudioReturnMode='home';
+    if(type==='invoice-history') window.calculatorNavReturnMode='home';
     if(type==='printer'){
       try{return window.openPrinterPanel&&window.openPrinterPanel();}
       catch(e){console.warn('Home printer navigation:',e);return;}
@@ -10254,7 +10301,18 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
     const original=window[name];
     if(typeof original!=='function' || original.__homeCloseFixed)return;
     const wrapped=function(){
+      // Capture the requested return destination before the original close
+      // handler clears its one-shot navigation flag.
+      const requestedHistoryReturn = name==='closeHistory' ? window.calculatorNavReturnMode : null;
       const result=original.apply(this,arguments);
+
+      // Calculator History opened from the Calculator Window is a child
+      // window: closing it must reveal the Calculator, not force Home.
+      // POS Invoice History opened by the Billing shortcut is also a child
+      // window: closing it must reveal the still-open Billing window.
+      if(name==='closeHistory' && (requestedHistoryReturn==='calculator' || requestedHistoryReturn==='billing')){
+        return result;
+      }
 
       // Printer is sometimes opened as a child window of POS Billing.
       // In that case closing the printer window must return to the still-open
@@ -10288,10 +10346,21 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
   if(typeof window.closeInvoiceCustomizer==='function' && !window.closeInvoiceCustomizer.__homeCloseFixed){
     const original=window.closeInvoiceCustomizer;
     const wrapped=function(){
+      // closeInvoiceCustomizer clears invoiceStudioReturnMode, so capture it first.
+      const returnMode=window.invoiceStudioReturnMode;
       const result=original.apply(this,arguments);
       const billing=document.getElementById('billing-overlay');
       const preview=document.getElementById('pos-invoice-preview-overlay');
-      if(!(billing&&billing.classList.contains('open')) && !(preview&&preview.classList.contains('open'))) goHome();
+      const history=document.getElementById('history-overlay');
+      // If Studio was opened from another window, closing it must reveal that
+      // same window. Only Studio launched from Home should return to Home.
+      if(billing&&billing.classList.contains('open')) return result;
+      if(preview&&preview.classList.contains('open')) return result;
+      if(history&&history.classList.contains('open')) return result;
+      if(returnMode==='calculator') return result;
+      if(returnMode==='history') return result;
+      if(returnMode==='billing') return result;
+      if(returnMode==='home' || !returnMode) goHome();
       return result;
     };
     wrapped.__homeCloseFixed=true;
@@ -12452,14 +12521,34 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 #billing-overlay .billing-header-left{flex:1;min-width:0}
 #billing-overlay .billing-header-main{display:flex;align-items:stretch;gap:7px;min-width:0}
 #billing-overlay .billing-header-copy{flex:1;min-width:0}
+#billing-overlay .billing-header-shortcuts{display:flex;align-items:stretch;gap:5px;flex:0 0 auto}
+#billing-overlay .billing-header-shortcut{flex:0 0 104px;min-width:90px;align-self:stretch;display:flex;align-items:center;justify-content:center;padding:5px 4px;border:1px solid #8ab8ff;border-radius:10px;color:#fff;box-shadow:0 2px 7px #0003;cursor:pointer;white-space:normal;text-align:center;font-size:10px;font-weight:900;line-height:1.2}
+#billing-overlay .billing-studio-shortcut{background:linear-gradient(145deg,#2584f5,#125bc2)}
+#billing-overlay .billing-history-shortcut{background:linear-gradient(145deg,#8248ed,#5726b8)}
+#billing-overlay .billing-header-shortcut:active{transform:scale(.98)}
 #billing-overlay .billing-previous-bill{flex:0 0 104px;min-width:90px;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border:1px solid #25d366;border-radius:10px;background:linear-gradient(145deg,#159447,#087536);color:#fff;box-shadow:0 2px 7px #0003;cursor:pointer;white-space:normal}
 #billing-overlay .billing-previous-label{font-size:8px;font-weight:900;line-height:1.1}
 #billing-overlay .billing-previous-bill strong{font-size:17px;font-weight:900;line-height:1.15}
 #billing-overlay .billing-previous-bill small{font-size:8px;font-weight:800;line-height:1.1;overflow-wrap:anywhere}
 #billing-overlay .billing-previous-bill:active{transform:scale(.98)}
-@media(max-width:520px){#billing-overlay .billing-header-main{gap:5px}#billing-overlay .billing-previous-bill{flex-basis:92px;min-width:84px;padding:4px 3px}#billing-overlay .billing-previous-bill strong{font-size:15px}#billing-overlay .billing-previous-label,#billing-overlay .billing-previous-bill small{font-size:7px}}
+@media(max-width:520px){#billing-overlay .billing-header-main{gap:5px}#billing-overlay .billing-header-shortcuts{gap:3px}#billing-overlay .billing-header-shortcut{flex-basis:92px;min-width:84px;padding:4px 3px;font-size:8px}#billing-overlay .billing-previous-bill{flex-basis:92px;min-width:84px;padding:4px 3px}#billing-overlay .billing-previous-bill strong{font-size:15px}#billing-overlay .billing-previous-label,#billing-overlay .billing-previous-bill small{font-size:7px}}
 </style>
 <script id="billing-previous-bill-button-script">
+function openBillingStudioShortcut(){
+  // Treat Studio as a child of the already-open Billing window.
+  window.invoiceStudioReturnMode='billing';
+  if(typeof openInvoiceCustomizer==='function') openInvoiceCustomizer('billing');
+}
+function openBillingInvoiceHistoryShortcut(){
+  // Mark History as a child of Billing so its close button returns to Billing,
+  // rather than the global close-window handler sending the user Home.
+  window.calculatorNavReturnMode='billing';
+  // Keep the existing Billing window open underneath and place History above it.
+  // Billing uses z-index 500 while the shared History overlay normally uses 100.
+  const historyOverlay=document.getElementById('history-overlay');
+  if(historyOverlay) historyOverlay.style.zIndex='501';
+  if(typeof openPOSHistory==='function') openPOSHistory();
+}
 function refreshPreviousBillingBillButton(){
   const btn=document.getElementById('billing-previous-bill');if(!btn)return;
   let records=[];try{records=typeof getHistory==='function'?getHistory('pos'):JSON.parse(localStorage.getItem('pos-billing-history')||'[]')}catch(e){records=[]}
