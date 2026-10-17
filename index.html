@@ -1320,6 +1320,137 @@ body.dark #billing-overlay button {
 @media(max-height:680px){#qrcode.qr-box canvas, #qrcode.qr-box img { width:175px!important; height:175px!important; max-width:100%!important; }}
 </style>
 
+<style id="item-database-android-keyboard-strip-fix">
+/* Item Database fields: suppress Android autofill/payment/address suggestion strip. */
+#item-db-overlay input:not([type="checkbox"]):not([type="hidden"]){
+  -webkit-user-modify:read-write-plaintext-only!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#item-db-overlay input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="item-database-android-keyboard-strip-fix-js">
+(function(){
+  function fixItemDatabaseKeyboardFields(){
+    var ids=['db-search','db-name','db-code','db-mrp','db-rate','db-purchase','db-tax','db-inclusive'];
+    ids.forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el)return;
+      if(id==='db-search') el.type='search';
+      else if(['db-mrp','db-rate','db-purchase','db-tax'].includes(id)){
+        /* Match the working search field's keyboard behavior, while retaining
+           the decimal keypad on Android. */
+        el.type='search';
+        el.setAttribute('inputmode','decimal');
+      } else if(el.type==='text' || !el.type) el.type='search';
+      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      if(['db-mrp','db-rate','db-purchase','db-tax'].includes(id)){
+        el.setAttribute('inputmode','decimal');
+      } else {
+        el.setAttribute('inputmode', el.type==='number' ? 'decimal' : 'search');
+      }
+      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('data-form-type','other');
+      el.setAttribute('data-lpignore','true');
+      el.setAttribute('data-1p-ignore','true');
+      el.setAttribute('data-bwignore','true');
+    });
+    var overlay=document.getElementById('item-db-overlay');
+    if(overlay){
+      var form=overlay.querySelector('.db-form');
+      if(form) form.setAttribute('autocomplete','off');
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',fixItemDatabaseKeyboardFields);
+  else fixItemDatabaseKeyboardFields();
+  document.addEventListener('click',function(e){
+    if(e.target && (e.target.closest?.('#item-db-overlay') || e.target.id==='db-list-tab' || e.target.id==='db-form-tab')) setTimeout(fixItemDatabaseKeyboardFields,50);
+  },true);
+})();
+</script>
+<style id="calculator-android-keyboard-strip-fix">
+/* Calculator UPI/message fields: suppress Android autofill/payment/address suggestions. */
+#upi-id,#upi-offer-message,#invoice-custom-overlay #invoice-upi-input{
+  -webkit-user-modify:read-write-plaintext-only!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#upi-id::-webkit-search-cancel-button,#upi-offer-message::-webkit-search-cancel-button,#invoice-custom-overlay #invoice-upi-input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="calculator-android-keyboard-strip-fix-js">
+(function(){
+  function fixCalculatorKeyboardFields(){
+    ['upi-id','upi-offer-message'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el)return;
+      el.type='search';
+      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      el.setAttribute('inputmode','search');
+      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('data-form-type','other');
+      el.setAttribute('data-lpignore','true');
+      el.setAttribute('data-1p-ignore','true');
+      el.setAttribute('data-bwignore','true');
+    });
+    var inv=document.getElementById('invoice-upi-input');
+    if(inv){
+      inv.type='search';
+      inv.setAttribute('autocomplete','off');
+      inv.setAttribute('autocorrect','off');
+      inv.setAttribute('autocapitalize','off');
+      inv.setAttribute('spellcheck','false');
+      inv.setAttribute('inputmode','search');
+      inv.setAttribute('enterkeyhint','done');
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixCalculatorKeyboardFields,{once:true});
+  else fixCalculatorKeyboardFields();
+  setTimeout(fixCalculatorKeyboardFields,300);
+})();
+</script>
+<style id="billing-payment-android-keyboard-strip-fix">
+/* Billing payment-mode editing fields: suppress Android suggestion/accessory strip. */
+#billing-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+#party-receive-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+#billing-overlay textarea,
+#party-receive-overlay textarea{
+  -webkit-user-modify:read-write-plaintext-only!important;
+  -webkit-appearance:none!important; appearance:none!important;
+}
+#billing-overlay input::-webkit-search-cancel-button,
+#party-receive-overlay input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="billing-payment-android-keyboard-strip-fix-js">
+(function(){
+  function fixBillingPaymentKeyboardFields(){
+    var selectors=['#billing-overlay #billing-mode-edit-charge','#billing-overlay #billing-mode-edit-upi','#billing-overlay #billing-payment-mode','#party-receive-overlay #party-receive-amount','#party-receive-overlay #party-receive-note'];
+    selectors.forEach(function(sel){var el=document.querySelector(sel);if(!el)return;
+      if(el.tagName==='INPUT' && el.type!=='checkbox' && el.type!=='radio'){
+        el.setAttribute('autocomplete','new-password');el.setAttribute('autocorrect','off');
+        el.setAttribute('autocapitalize','off');el.setAttribute('spellcheck','false');
+        el.setAttribute('data-form-type','other');el.setAttribute('data-lpignore','true');
+        el.setAttribute('data-1p-ignore','true');el.setAttribute('data-bwignore','true');
+        if(el.type==='number'){el.setAttribute('inputmode','decimal');}
+        else {el.type='search';el.setAttribute('inputmode','search');}
+        el.setAttribute('enterkeyhint','done');
+      }else if(el.tagName==='TEXTAREA'){
+        el.setAttribute('autocomplete','off');el.setAttribute('autocorrect','off');
+        el.setAttribute('autocapitalize','off');el.setAttribute('spellcheck','false');
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixBillingPaymentKeyboardFields);
+  else fixBillingPaymentKeyboardFields();
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('#billing-overlay,#party-receive-overlay'))setTimeout(fixBillingPaymentKeyboardFields,80);},true);
+  document.addEventListener('focusin',function(e){if(e.target&&e.target.closest&&e.target.closest('#billing-overlay,#party-receive-overlay'))setTimeout(fixBillingPaymentKeyboardFields,30);},true);
+})();
+</script>
 </head>
 <body class="home-mode">
 <!-- COUPON VOUCHER MOVED TO HOME SCREEN AS TOP-LEVEL WINDOW; EXISTING DESIGN/PRINT LOGIC REUSED -->
@@ -1499,7 +1630,7 @@ div>
       <div class="invoice-field"><label>SHOP NAME</label><input id="invoice-shop-name" value="YOUR SHOP NAME"></div>
       <div class="invoice-field"><label>INVOICE TITLE</label><input id="invoice-title-input" value="PAYMENT INVOICE"></div>
       <div class="invoice-field"><label>BILL NO.</label><input id="invoice-bill-input" value="000125"></div>
-      <div class="invoice-field"><label>UPI ID</label><input id="invoice-upi-input" value=""></div>
+      <div class="invoice-field"><label>UPI ID</label><input id="invoice-upi-input" type="search" inputmode="search" enterkeyhint="done" value="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
       <div class="invoice-display-settings">
         <div class="invoice-display-settings-title">58mm RECEIPT DISPLAY — REAL-TIME SAVE</div>
         <div class="invoice-setting-grid">
@@ -1654,7 +1785,7 @@ div>
     <div class="config-section">
         <div class="input-group">
             <label>UPI ID</label>
-            <input type="text" id="upi-id" value="">
+            <input type="search" id="upi-id" name="calculator-upi-id" value="" inputmode="search" enterkeyhint="done" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
             <div class="input-actions">
                 <button class="save-icon" onclick="saveUpi()" aria-label="Save UPI ID" title="Save UPI ID">▣</button>
                 <button class="save-icon qr-select-btn" onclick="chooseSavedQR()" aria-label="Choose saved QR" title="Choose saved QR">⌄</button>
@@ -1662,7 +1793,7 @@ div>
         </div>
         <div class="input-group offer-message-group">
             <label>Offer / Message (optional)</label>
-            <input type="text" id="upi-offer-message" value="" maxlength="120" placeholder="e.g. 🎁 Pay &amp; Get 10% OFF" autocomplete="off" spellcheck="false" aria-label="Offer or payment message">
+            <input type="search" id="upi-offer-message" name="calculator-offer-message" value="" maxlength="120" placeholder="e.g. 🎁 Pay &amp; Get 10% OFF" autocomplete="new-password" autocorrect="off" autocapitalize="off" inputmode="search" enterkeyhint="done" spellcheck="false" aria-label="Offer or payment message" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true">
         </div>
     </div>
 
@@ -4608,7 +4739,7 @@ function renderInvoiceItems(){
     const row=document.createElement('div');row.className='invoice-item-edit';
     const previewCall=invoiceCustomizationMode==='billing'?'renderPOSInvoice58Preview()':'renderCalculatorInvoiceCustomizationPreview()';
     const billingRateLock=invoiceCustomizationMode==='billing'?' readonly title="FINAL RATE comes from Billing Window"':'';
-    row.innerHTML=`<input value="${invoiceStudioNormalizeItemName(it.name,it).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" placeholder="Item" oninput="getInvoiceItems(invoiceCustomizationMode)[${i}].name=this.value.replace(/[^A-Za-z\s]/g,'').replace(/\s+/g,' ');saveInvoiceSettings(invoiceCustomizationMode);${previewCall}">`
+    row.innerHTML=`<input type="search" inputmode="search" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" value="${invoiceStudioNormalizeItemName(it.name,it).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" placeholder="Item" oninput="getInvoiceItems(invoiceCustomizationMode)[${i}].name=this.value.replace(/[^A-Za-z\s]/g,'').replace(/\s+/g,' ');saveInvoiceSettings(invoiceCustomizationMode);${previewCall}">`
       +`<input type="number" min="0" step="0.01" value="${price.toFixed(2)}" oninput="getInvoiceItems(invoiceCustomizationMode)[${i}].price=parseFloat(this.value)||0;updateInvoiceCustomTotal();saveInvoiceSettings(invoiceCustomizationMode);${previewCall}">`
       +`<input type="number" min="0" step="0.01" value="${rate.toFixed(2)}"${billingRateLock} oninput="getInvoiceItems(invoiceCustomizationMode)[${i}].rate=parseFloat(this.value)||0;updateInvoiceCustomTotal();saveInvoiceSettings(invoiceCustomizationMode);${previewCall}">`
       +`<input type="number" min="0" step="1" value="${qty}" oninput="getInvoiceItems(invoiceCustomizationMode)[${i}].qty=parseFloat(this.value)||0;updateInvoiceCustomTotal();saveInvoiceSettings(invoiceCustomizationMode);${previewCall}">`
@@ -5174,7 +5305,7 @@ window.addEventListener("load",()=>{updateRecycleCount();loadInvoiceDisplaySetti
     <div class="billing-payment-popup-grid">
       <div class="billing-payment-popup-field">
         <label>PAYMENT RECEIVED</label>
-        <input id="billing-popup-received" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" oninput="updateBillingPaymentPopup()">
+        <input id="billing-popup-received" type="search" inputmode="decimal" enterkeyhint="done" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="0" oninput="updateBillingPaymentPopup()">
       </div>
       <div class="billing-payment-popup-change">
         <span id="billing-popup-change-label">CHANGE</span>
@@ -5226,7 +5357,7 @@ window.addEventListener("load",()=>{updateRecycleCount();loadInvoiceDisplaySetti
       </div>
       <div id="billing-charge-treatment-menu" class="billing-charge-treatment-menu" hidden aria-hidden="true"><div class="ct-title">PAYMENT CHARGE TREATMENT</div><label><input type="radio" name="billing-charge-treatment" value="include"> Include Charges</label><label><input type="radio" name="billing-charge-treatment" value="exclude"> Exclude Charges</label><div class="ct-actions"><button type="button" onclick="closeBillingChargeTreatment()">Cancel</button><button type="button" class="ct-save" onclick="saveBillingChargeTreatment()">Save</button></div></div>
       <div class="db-search-row">
-        <div class="billing-search-wrap"><input id="billing-search" class="db-search" placeholder="Search item / Scan Barcode" oninput="renderBillingSearch()" autocomplete="off" inputmode="search"><button id="billing-search-clear" class="billing-search-clear" type="button" tabindex="0" onclick="clearBillingSearchWithFeedback(event)" onpointerdown="billingSearchClearPress(this)" onpointerup="billingSearchClearRelease(this)" onpointercancel="billingSearchClearRelease(this)" aria-label="Clear search" title="Clear search">×</button></div>
+        <div class="billing-search-wrap"><input id="billing-search" class="db-search" type="search" placeholder="Search item / Scan Barcode" oninput="renderBillingSearch()" autocomplete="off" inputmode="search"><button id="billing-search-clear" class="billing-search-clear" type="button" tabindex="0" onclick="clearBillingSearchWithFeedback(event)" onpointerdown="billingSearchClearPress(this)" onpointerup="billingSearchClearRelease(this)" onpointercancel="billingSearchClearRelease(this)" aria-label="Clear search" title="Clear search">×</button></div>
         <button id="billing-camera-btn" class="billing-camera-btn" type="button" onclick="openBillingCameraScanner()" aria-label="Scan barcode with camera" title="Camera barcode scan">📷</button>
         <button id="billing-barcode-toggle" class="billing-barcode-toggle off" type="button" onclick="toggleBillingBarcodeMode()" aria-pressed="false">🔌 Barcode 🔴 OFF</button>
         <button class="db-small-btn" onclick="openItemDatabase()">📦 Items</button>
@@ -5763,10 +5894,10 @@ function openBillingModeEdit(mode){
   const charge=isCard?billingCreditCardCharge:billingMdrCharge;
   const message=getBillingOfferMessage(m);
   body.innerHTML=`
-    <div class="billing-mode-edit-field"><label>${isCash?'CASH UPI ID':'QR ID / UPI ID'}</label><input id="billing-mode-edit-upi" type="text" value="${escapeHtml(upiValue||'')}" placeholder="${isCash?'cash@upi':'yourname@upi'}" autocomplete="off" spellcheck="false"></div>
-    ${isCash?'':'<div class="billing-mode-edit-field"><label>'+m+' CHARGE / QR SETTING</label>'+(isUpi?'<div class="billing-mode-edit-note" style="margin:0">UPI payment uses the saved UPI ID. No extra charge is added.</div>':'<input id="billing-mode-edit-charge" type="number" min="0" max="100" step="0.01" value="'+Number(charge||0)+'" inputmode="decimal">')+'</div>'}
+    <div class="billing-mode-edit-field"><label>${isCash?'CASH UPI ID':'QR ID / UPI ID'}</label><input id="billing-mode-edit-upi" type="search" inputmode="search" enterkeyhint="done" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" value="${escapeHtml(upiValue||'')}" placeholder="${isCash?'cash@upi':'yourname@upi'}"></div>
+    ${isCash?'':'<div class="billing-mode-edit-field"><label>'+m+' CHARGE / QR SETTING</label>'+(isUpi?'<div class="billing-mode-edit-note" style="margin:0">UPI payment uses the saved UPI ID. No extra charge is added.</div>':'<input id="billing-mode-edit-charge" type="search" inputmode="decimal" enterkeyhint="done" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" min="0" max="100" step="0.01" value="'+Number(charge||0)+'">')+'</div>'}
     <div class="billing-mode-edit-field"><label>QR PRINT</label><label style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text);font-size:12px;font-weight:900;cursor:pointer"><span>🧾 Print QR on Invoice</span><input id="billing-mode-edit-qr" type="checkbox" ${getBillingQrPrintSetting(m)?'checked':''} style="width:20px;height:20px;accent-color:var(--blue);flex:0 0 auto" aria-label="${escapeHtml(m)} Print QR on Invoice"></label></div>
-    <div class="billing-mode-edit-field"><label>Offer / Message (Optional)</label><input id="billing-mode-edit-message" type="text" maxlength="120" value="${escapeHtml(message)}" placeholder="e.g. 🎁 Pay &amp; Get 10% OFF" autocomplete="off" spellcheck="false" aria-label="${escapeHtml(m)} Offer or Message"></div>
+    <div class="billing-mode-edit-field"><label>Offer / Message (Optional)</label><input id="billing-mode-edit-message" type="search" inputmode="search" enterkeyhint="done" maxlength="120" value="${escapeHtml(message)}" placeholder="e.g. 🎁 Pay &amp; Get 10% OFF" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" aria-label="${escapeHtml(m)} Offer or Message"></div>
     <div class="billing-mode-edit-note">${isCash?'Cash payment message is saved only for Cash.':isUpi?'UPI message is also sent as the QR transaction note (tn).':isCard?'Credit Card message is saved separately for Credit Card.':'MDR message is saved separately for MDR.'}</div>
     <div class="billing-mode-edit-actions"><button type="button" class="billing-mode-edit-cancel" onclick="closeBillingModeEdit()">Cancel</button><button type="button" class="billing-mode-edit-save" onclick="saveBillingModeEdit('${m}')">💾 Save</button></div>`;
   overlay.classList.add('open'); overlay.setAttribute('aria-hidden','false');
@@ -12606,6 +12737,473 @@ function openPreviousBillingBill(){
   }
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshPreviousBillingBillButton,{once:true});else refreshPreviousBillingBillButton();
+</script>
+
+
+<!-- Barcode Studio Android keyboard suggestion-strip fix: scoped only to Barcode Studio. -->
+<style id="barcode-studio-android-keyboard-strip-fix">
+#barcodeStudio input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+#barcodeStudio textarea{
+  -webkit-user-modify:read-write-plaintext-only!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#barcodeStudio input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="billing-payment-details-keyboard-strip-fix">
+(function(){
+  var el=document.getElementById('billing-popup-received');
+  if(!el)return;
+  function fix(){
+    el.type='search';
+    el.setAttribute('inputmode','decimal');
+    el.setAttribute('enterkeyhint','done');
+    el.setAttribute('autocomplete','new-password');
+    el.setAttribute('autocorrect','off');
+    el.setAttribute('autocapitalize','off');
+    el.setAttribute('spellcheck','false');
+    el.setAttribute('data-form-type','other');
+    el.setAttribute('data-lpignore','true');
+    el.setAttribute('data-1p-ignore','true');
+    el.setAttribute('data-bwignore','true');
+  }
+  fix();
+  el.addEventListener('focus',fix,true);
+})();
+</script>
+
+<script id="barcode-studio-android-keyboard-strip-fix-js">
+(function(){
+  function fixBarcodeStudioKeyboardFields(){
+    var root=document.getElementById('barcodeStudio');
+    if(!root)return;
+    root.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),textarea').forEach(function(el){
+      /* Match the Item Database keyboard-strip fix: use search-style fields
+         for numeric entries too, while keeping the decimal keypad on Android. */
+      if(el.tagName==='INPUT' && el.type==='number'){
+        el.type='search';
+        el.setAttribute('inputmode','decimal');
+      } else if(el.tagName==='INPUT' && (!el.type || el.type==='text')){
+        el.type='search';
+      }
+      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      if(el.getAttribute('inputmode')!=='decimal')el.setAttribute('inputmode','search');
+      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('data-form-type','other');
+      el.setAttribute('data-lpignore','true');
+      el.setAttribute('data-1p-ignore','true');
+      el.setAttribute('data-bwignore','true');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixBarcodeStudioKeyboardFields,{once:true});
+  else fixBarcodeStudioKeyboardFields();
+  document.addEventListener('click',function(e){
+    if(e.target && e.target.closest && e.target.closest('#barcodeStudio'))setTimeout(fixBarcodeStudioKeyboardFields,50);
+  },true);
+  var root=document.getElementById('barcodeStudio');
+  if(root && window.MutationObserver){
+    new MutationObserver(function(){fixBarcodeStudioKeyboardFields();}).observe(root,{childList:true,subtree:true});
+  }
+})();
+</script>
+
+<!-- Notebook Android keyboard suggestion-strip fix: scoped only to Notebook windows. -->
+<style id="notebook-android-keyboard-strip-fix">
+#notebook-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+#notebook-overlay textarea,
+#notebook-form-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+#notebook-form-overlay textarea,
+#notebook-party-picker-overlay input,
+#notebook-party-overlay input,
+#notebook-party-detail-overlay input,
+#notebook-all-items-overlay input,
+#notebook-recycle-overlay input { -webkit-appearance:none!important; appearance:none!important; }
+</style>
+<script id="notebook-android-keyboard-strip-fix-js">
+(function(){
+  var selectors=['#notebook-overlay','#notebook-form-overlay','#notebook-party-picker-overlay','#notebook-party-overlay','#notebook-party-detail-overlay','#notebook-all-items-overlay','#notebook-recycle-overlay'];
+  function fixNotebookFields(){
+    selectors.forEach(function(sel){var root=document.querySelector(sel);if(!root)return;
+      root.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),textarea').forEach(function(el){
+        if(el.tagName==='INPUT' && (!el.type || el.type==='text'))el.type='search';
+        el.setAttribute('autocomplete','new-password');
+        el.setAttribute('autocorrect','off');
+        el.setAttribute('autocapitalize','off');
+        el.setAttribute('spellcheck','false');
+        el.setAttribute('inputmode',el.type==='number'?'decimal':(el.type==='date'?'none':'search'));
+        el.setAttribute('enterkeyhint','done');
+        el.setAttribute('data-form-type','other');
+        el.setAttribute('data-lpignore','true');
+        el.setAttribute('data-1p-ignore','true');
+        el.setAttribute('data-bwignore','true');
+      });
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixNotebookFields);else fixNotebookFields();
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&selectors.some(function(sel){return e.target.closest(sel)}))setTimeout(fixNotebookFields,60);},true);
+  if(window.MutationObserver){selectors.forEach(function(sel){var root=document.querySelector(sel);if(root)new MutationObserver(fixNotebookFields).observe(root,{childList:true,subtree:true});});}
+})();
+</script>
+
+
+<style id="invoice-studio-android-keyboard-strip-fix">
+/* Invoice Studio text fields: suppress Android autofill/suggestion strip only here. */
+#invoice-custom-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]){
+  -webkit-user-modify:read-write-plaintext-only!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#invoice-custom-overlay input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="invoice-studio-android-keyboard-strip-fix-js">
+(function(){
+  function fixInvoiceStudioKeyboardFields(){
+    var overlay=document.getElementById('invoice-custom-overlay');
+    if(!overlay)return;
+    overlay.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])').forEach(function(el){
+      /* Apply the same keyboard-strip mitigation to every editable field in the
+         Invoice Studio item rows, not just the first (Item-name) input. */
+      if(el.closest('.invoice-item-edit') && !el.readOnly){
+        var numeric=el.type==='number';
+        if(numeric)el.type='search';
+        else if(el.type==='text' || !el.type)el.type='search';
+        el.setAttribute('inputmode',numeric?'decimal':'search');
+      } else if(el.type==='text' || !el.type)el.type='search';
+      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      if(!el.hasAttribute('inputmode'))el.setAttribute('inputmode','search');
+      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('data-form-type','other');
+      el.setAttribute('data-lpignore','true');
+      el.setAttribute('data-1p-ignore','true');
+      el.setAttribute('data-bwignore','true');
+    });
+    var body=overlay.querySelector('.invoice-custom-body');
+    if(body)body.setAttribute('autocomplete','off');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixInvoiceStudioKeyboardFields);
+  else fixInvoiceStudioKeyboardFields();
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.closest&&e.target.closest('#invoice-custom-overlay'))setTimeout(fixInvoiceStudioKeyboardFields,50);
+  },true);
+  document.addEventListener('focusin',function(e){
+    var el=e.target;
+    if(!el || !el.matches || !el.matches('#invoice-custom-overlay .invoice-item-edit input:not([readonly])'))return;
+    var numeric=el.type==='number' || el.getAttribute('inputmode')==='decimal';
+    if(el.type!=='search')el.type='search';
+    el.setAttribute('inputmode',numeric?'decimal':'search');
+    el.setAttribute('autocomplete','new-password');
+    el.setAttribute('autocorrect','off');el.setAttribute('autocapitalize','off');el.setAttribute('spellcheck','false');
+    el.setAttribute('enterkeyhint','done');el.setAttribute('data-form-type','other');el.setAttribute('data-lpignore','true');el.setAttribute('data-1p-ignore','true');el.setAttribute('data-bwignore','true');
+  },true);
+  if(window.MutationObserver){var overlay=document.getElementById('invoice-custom-overlay');if(overlay)new MutationObserver(fixInvoiceStudioKeyboardFields).observe(overlay,{childList:true,subtree:true});}
+})();
+</script>
+
+
+
+<style id="loyalty-coupon-android-keyboard-strip-fix">
+/* Restrict Android keyboard/autofill-strip mitigation to Loyalty and Coupon/Voucher windows. */
+#loyalty-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.loyalty-modal input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+#coupon-voucher-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+#coupon-voucher-overlay textarea {
+  -webkit-user-modify:read-write-plaintext-only!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#loyalty-overlay input::-webkit-search-cancel-button,
+.loyalty-modal input::-webkit-search-cancel-button,
+#coupon-voucher-overlay input::-webkit-search-cancel-button {
+  display:none!important;-webkit-appearance:none!important;appearance:none!important;
+}
+</style>
+<script id="loyalty-coupon-android-keyboard-strip-fix-js">
+(function(){
+  var roots=['#loyalty-overlay','.loyalty-modal','#coupon-voucher-overlay'];
+  function fixFields(){
+    roots.forEach(function(sel){
+      document.querySelectorAll(sel).forEach(function(root){
+        root.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),textarea').forEach(function(el){
+          if(el.tagName==='INPUT'){
+            if(el.type==='number'){
+              /* Search-style input suppresses Android autofill strip; keep numeric keypad. */
+              el.type='search';
+              el.setAttribute('inputmode','decimal');
+            } else if(!el.type || el.type==='text') {
+              el.type='search';
+              el.setAttribute('inputmode','search');
+            }
+          } else {
+            el.setAttribute('inputmode','text');
+          }
+          el.setAttribute('autocomplete','new-password');
+          el.setAttribute('autocorrect','off');
+          el.setAttribute('autocapitalize','off');
+          el.setAttribute('spellcheck','false');
+          el.setAttribute('enterkeyhint','done');
+          el.setAttribute('data-form-type','other');
+          el.setAttribute('data-lpignore','true');
+          el.setAttribute('data-1p-ignore','true');
+          el.setAttribute('data-bwignore','true');
+        });
+        var form=root.querySelector('form');
+        if(form)form.setAttribute('autocomplete','off');
+      });
+    });
+  }
+  function runSoon(){setTimeout(fixFields,50);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixFields);else fixFields();
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.closest&&roots.some(function(sel){return e.target.closest(sel)}))runSoon();
+  },true);
+  document.addEventListener('focusin',function(e){
+    if(e.target&&e.target.matches&&e.target.matches('#loyalty-overlay input, .loyalty-modal input, #coupon-voucher-overlay input, #coupon-voucher-overlay textarea'))runSoon();
+  },true);
+  if(window.MutationObserver){
+    roots.forEach(function(sel){document.querySelectorAll(sel).forEach(function(root){new MutationObserver(fixFields).observe(root,{childList:true,subtree:true});});});
+    var bodyObserver=new MutationObserver(function(){
+      roots.forEach(function(sel){document.querySelectorAll(sel).forEach(function(root){
+        if(!root.__keyboardStripObserver){root.__keyboardStripObserver=true;new MutationObserver(fixFields).observe(root,{childList:true,subtree:true});}
+      });});
+    });
+    if(document.body)bodyObserver.observe(document.body,{childList:true,subtree:true});
+  }
+})();
+</script>
+
+
+<!-- POS Billing item-name keyboard strip fix: only the item-name field is affected. -->
+<style id="billing-item-name-keyboard-strip-fix">
+#billing-overlay input.cart-name-edit{
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  -webkit-user-modify:read-write-plaintext-only!important;
+}
+#billing-overlay input.cart-name-edit::-webkit-search-cancel-button{
+  display:none!important;-webkit-appearance:none!important;appearance:none!important;
+}
+</style>
+<script id="billing-item-name-keyboard-strip-fix-js">
+(function(){
+  function fixBillingItemNameFields(){
+    var root=document.getElementById('billing-overlay');
+    if(!root)return;
+    root.querySelectorAll('input.cart-name-edit').forEach(function(el){
+      /* Use the same keyboard/autofill suppression strategy as the working
+         Item Database fields. Keep the existing value and input handler intact. */
+      if(el.type!=='search')el.type='search';
+      el.setAttribute('inputmode','search');
+      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('data-form-type','other');
+      el.setAttribute('data-lpignore','true');
+      el.setAttribute('data-1p-ignore','true');
+      el.setAttribute('data-bwignore','true');
+    });
+  }
+  function runSoon(){setTimeout(fixBillingItemNameFields,50);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixBillingItemNameFields,{once:true});
+  else fixBillingItemNameFields();
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.closest&&e.target.closest('#billing-overlay'))runSoon();
+  },true);
+  document.addEventListener('focusin',function(e){
+    if(e.target&&e.target.matches&&e.target.matches('#billing-overlay input.cart-name-edit'))runSoon();
+  },true);
+  var root=document.getElementById('billing-overlay');
+  if(root&&window.MutationObserver){
+    new MutationObserver(fixBillingItemNameFields).observe(root,{childList:true,subtree:true});
+  }
+})();
+</script>
+
+<!-- Invoice History keyboard strip fix: suppress Android suggestion bar only for editable history fields. -->
+<style id="invoice-history-keyboard-strip-fix">
+#history-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+#history-overlay textarea{
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  -webkit-user-modify:read-write-plaintext-only!important;
+}
+#history-overlay input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="invoice-history-keyboard-strip-fix-js">
+(function(){
+  function fixInvoiceHistoryKeyboardFields(){
+    var root=document.getElementById('history-overlay');
+    if(!root)return;
+    root.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="date"]),textarea').forEach(function(el){
+      if(el.tagName==='INPUT'){
+        if(el.type==='number'){el.type='search';el.setAttribute('inputmode','decimal');}
+        else if(!el.type||el.type==='text'){el.type='search';el.setAttribute('inputmode','search');}
+      }else{el.setAttribute('inputmode','text');}
+      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('data-form-type','other');
+      el.setAttribute('data-lpignore','true');
+      el.setAttribute('data-1p-ignore','true');
+      el.setAttribute('data-bwignore','true');
+    });
+    var form=root.querySelector('form');if(form)form.setAttribute('autocomplete','off');
+  }
+  function runSoon(){setTimeout(fixInvoiceHistoryKeyboardFields,50);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixInvoiceHistoryKeyboardFields);
+  else fixInvoiceHistoryKeyboardFields();
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('#history-overlay'))runSoon();},true);
+  document.addEventListener('focusin',function(e){if(e.target&&e.target.closest&&e.target.closest('#history-overlay'))runSoon();},true);
+  if(window.MutationObserver){
+    var root=document.getElementById('history-overlay');
+    if(root)new MutationObserver(fixInvoiceHistoryKeyboardFields).observe(root,{childList:true,subtree:true});
+    if(document.body)new MutationObserver(function(){var r=document.getElementById('history-overlay');if(r&&!r.__invoiceHistoryKeyboardObserver){r.__invoiceHistoryKeyboardObserver=true;new MutationObserver(fixInvoiceHistoryKeyboardFields).observe(r,{childList:true,subtree:true});fixInvoiceHistoryKeyboardFields();}}).observe(document.body,{childList:true,subtree:true});
+  }
+})();
+</script>
+
+
+
+<!-- POS Billing Android keyboard suggestion-strip fix: scoped to Billing window only. -->
+<style id="billing-window-keyboard-strip-fix">
+#billing-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):not([type="date"]):not([type="time"]),
+#billing-overlay textarea{
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  -webkit-user-modify:read-write-plaintext-only!important;
+}
+#billing-overlay input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="billing-window-keyboard-strip-fix-js">
+(function(){
+  function fixBillingKeyboardFields(){
+    var root=document.getElementById('billing-overlay');
+    if(!root)return;
+    root.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):not([type="date"]):not([type="time"]),textarea').forEach(function(el){
+      if(el.tagName==='INPUT'){
+        if(el.type==='number'){
+          el.type='search';
+          el.setAttribute('inputmode','decimal');
+        }else if(el.type==='text'||el.type==='search'||!el.type){
+          if(el.type!=='search')el.type='search';
+          el.setAttribute('inputmode','search');
+        }
+      }else{
+        el.setAttribute('inputmode','text');
+      }
+      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('data-form-type','other');
+      el.setAttribute('data-lpignore','true');
+      el.setAttribute('data-1p-ignore','true');
+      el.setAttribute('data-bwignore','true');
+    });
+    var form=root.querySelector('form');if(form)form.setAttribute('autocomplete','off');
+  }
+  function runSoon(){setTimeout(fixBillingKeyboardFields,50);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixBillingKeyboardFields);
+  else fixBillingKeyboardFields();
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('#billing-overlay'))runSoon();},true);
+  document.addEventListener('focusin',function(e){if(e.target&&e.target.closest&&e.target.closest('#billing-overlay'))runSoon();},true);
+  var root=document.getElementById('billing-overlay');
+  if(root&&window.MutationObserver)new MutationObserver(fixBillingKeyboardFields).observe(root,{childList:true,subtree:true});
+  if(window.MutationObserver&&document.body)new MutationObserver(function(){var r=document.getElementById('billing-overlay');if(r&&!r.__billingKeyboardObserver){r.__billingKeyboardObserver=true;new MutationObserver(fixBillingKeyboardFields).observe(r,{childList:true,subtree:true});fixBillingKeyboardFields();}}).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+
+<!-- Cloud Backup Android keyboard suggestion/autofill strip fix: scoped only to Cloud window. -->
+<style id="cloud-window-keyboard-strip-fix">
+  #cloudBackupModal #cloudClientId {
+    -webkit-text-size-adjust: 100%;
+    /* Match the search-style input strategy used by the fields where the
+       Android keyboard suggestion strip is suppressed. */
+    -webkit-appearance: none;
+    appearance: none;
+  }
+</style>
+<script id="cloud-window-keyboard-strip-fix-js">
+(function(){
+  function fixCloudKeyboardField(){
+    var root=document.getElementById('cloudBackupModal');
+    if(!root) return;
+    var el=root.querySelector('#cloudClientId');
+    if(!el) return;
+    /* Search-style input is used here because the previous text-input
+       configuration did not suppress the Android keyboard's white strip. */
+    if(el.type !== 'search') el.type = 'search';
+    el.setAttribute('name','cloud-oauth-client-id');
+    el.setAttribute('inputmode','search');
+    el.setAttribute('autocomplete','new-password');
+    el.setAttribute('autocorrect','off');
+    el.setAttribute('autocapitalize','off');
+    el.setAttribute('spellcheck','false');
+    el.setAttribute('enterkeyhint','done');
+    el.setAttribute('data-form-type','other');
+    el.setAttribute('data-lpignore','true');
+    el.setAttribute('data-1p-ignore','true');
+    el.setAttribute('data-bwignore','true');
+    var form=el.closest('form');
+    if(form) form.setAttribute('autocomplete','off');
+  }
+  function runSoon(){setTimeout(fixCloudKeyboardField,50);}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',fixCloudKeyboardField,{once:true});
+  else fixCloudKeyboardField();
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('#cloudBackupModal'))runSoon();},true);
+  document.addEventListener('focusin',function(e){if(e.target&&e.target.closest&&e.target.closest('#cloudBackupModal'))runSoon();},true);
+  document.addEventListener('input',function(e){if(e.target&&e.target.id==='cloudClientId')runSoon();},true);
+  var root=document.getElementById('cloudBackupModal');
+  if(root&&window.MutationObserver) new MutationObserver(fixCloudKeyboardField).observe(root,{childList:true,subtree:true});
+})();
+</script>
+
+
+
+<style id="party-ledger-android-keyboard-strip-fix">
+/* Limit keyboard suggestion-strip mitigation to Party Ledger and its party form only. */
+#party-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+#party-form-overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+#party-overlay textarea,
+#party-form-overlay textarea {
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+</style>
+<script id="party-ledger-android-keyboard-strip-fix-js">
+(function(){
+  function fixPartyLedgerKeyboardFields(){
+    ['party-overlay','party-form-overlay'].forEach(function(id){
+      var root=document.getElementById(id); if(!root)return;
+      root.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),textarea').forEach(function(el){
+        if((el.tagName==='INPUT')&&(el.type==='text'||!el.type))el.type='search';
+        el.setAttribute('autocomplete','off');
+        el.setAttribute('autocorrect','off');
+        el.setAttribute('autocapitalize','off');
+        el.setAttribute('spellcheck','false');
+        el.setAttribute('data-form-type','other');
+        el.setAttribute('data-lpignore','true');
+        el.setAttribute('data-1p-ignore','true');
+        el.setAttribute('data-bwignore','true');
+      });
+      root.setAttribute('autocomplete','off');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixPartyLedgerKeyboardFields);else fixPartyLedgerKeyboardFields();
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('#party-overlay,#party-form-overlay'))setTimeout(fixPartyLedgerKeyboardFields,50);},true);
+  if(window.MutationObserver){['party-overlay','party-form-overlay'].forEach(function(id){var root=document.getElementById(id);if(root)new MutationObserver(fixPartyLedgerKeyboardFields).observe(root,{childList:true,subtree:true});});}
+})();
 </script>
 
 </body>
