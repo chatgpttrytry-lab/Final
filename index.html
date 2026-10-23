@@ -1754,21 +1754,21 @@ div>
 <div class="party-receive-overlay" id="party-receive-overlay" aria-hidden="true"><div class="party-receive-card"><div class="party-receive-head"><div class="party-receive-title">RECEIVE PAYMENT</div><div class="party-receive-sub" id="party-receive-customer">Customer</div></div><div class="party-receive-body"><div class="party-receive-current"><span>CURRENT DUE</span><b id="party-receive-due">₹ 0</b></div><div class="party-field"><label>Payment Amount</label><input id="party-receive-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div><div class="party-field"><label>Payment Mode</label><select id="party-receive-mode" style="width:100%;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);padding:0 10px;font-weight:800"><option>Cash</option><option>UPI</option><option>Credit Card</option><option>MDR</option></select></div><div class="party-field"><label>Note</label><textarea id="party-receive-note" placeholder="Note"></textarea></div></div><div class="party-receive-actions"><button class="party-cancel" onclick="closePartyReceivePayment()">CANCEL</button><button class="party-receive-save" onclick="savePartyReceivePayment()">SAVE PAYMENT</button></div></div></div>
 <style id="calculator-window-shortcuts-css">
 .calculator-window-shortcuts{
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
   padding:2px 18px 2px;flex:none;
 }
 .calculator-window-shortcuts button{
-  min-width:0;height:36px;padding:0 8px;border:1px solid var(--border);
+  min-width:0;height:40px;padding:2px 5px;border:1px solid var(--border);
   border-radius:11px;background:var(--blue2);color:var(--blue);
-  font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;
-  touch-action:manipulation;
+  font-size:11px;font-weight:800;white-space:normal;line-height:1.1;
+  overflow-wrap:anywhere;cursor:pointer;touch-action:manipulation;
 }
 @media(max-width:360px){
-  .calculator-window-shortcuts{gap:6px;padding-left:12px;padding-right:12px}
-  .calculator-window-shortcuts button{font-size:11px;padding:0 4px}
+  .calculator-window-shortcuts{gap:5px;padding-left:12px;padding-right:12px}
+  .calculator-window-shortcuts button{font-size:10px;padding:2px 3px}
 }
 @media(max-height:680px){
-  .calculator-window-shortcuts button{height:30px;font-size:11px}
+  .calculator-window-shortcuts button{height:32px;font-size:10px}
 }
 </style>
 
@@ -1808,6 +1808,7 @@ div>
     <div class="calculator-window-shortcuts" aria-label="Calculator shortcuts">
         <button type="button" onclick="window.calculatorNavReturnMode='calculator';openPOSHistory();openCalculatorHistory()" aria-label="Calculator History" title="Calculator History">🕘 Calculator History</button>
         <button type="button" onclick="window.invoiceStudioReturnMode='calculator';openInvoiceButton()" aria-label="Calculator Studio" title="Calculator Studio">🧮 Calculator Studio</button>
+        <button type="button" onclick="openBilling()" aria-label="Open POS Billing Window" title="Open POS Billing Window">🛒 POS Billing</button>
     </div>
 
     <div class="keypad">
@@ -3672,7 +3673,7 @@ function setPrinterPaperSize(paper){
   try{st={...INVOICE_STUDIO_DEFAULT,...invoiceStudioRead(mode),paper:p};}catch(e){st={paper:p};}
   // PRINTER <-> INVOICE CUSTOMIZATION: one selected paper width is the single source of truth.
   try{invoiceStudioWrite(mode,st);invoiceStudioApply(st);saveInvoiceSettings(mode);}catch(e){}
-  try{localStorage.setItem('invoice-studio-printer-paper-'+mode,p);localStorage.setItem('invoice-studio-printer-paper',p);}catch(e){}
+  try{localStorage.setItem('invoice-studio-printer-paper-'+mode,p);}catch(e){}
   const b58=document.getElementById('printer-paper-58'),b80=document.getElementById('printer-paper-80');
   if(b58)b58.classList.toggle('active',p==='58');
   if(b80)b80.classList.toggle('active',p==='80');
@@ -4076,24 +4077,13 @@ function billCounterKey(source){return source==='calculator'?CAL_BILL_NO_KEY:BIL
 function billDayKey(source){return source==='calculator'?CAL_BILL_DAY_KEY:BILL_DAY_KEY;}
 function currentBillKey(source){return source==='calculator'?CAL_CURRENT_BILL_KEY:POS_CURRENT_BILL_KEY;}
 function getDailyNextBillNo(source='billing'){
-  const day=getTodayKey(), dayKey=billDayKey(source), counterKey=billCounterKey(source), prefix=billPrefix(source);
-  const savedDay=localStorage.getItem(dayKey);
-  if(savedDay!==day){localStorage.setItem(dayKey,day);localStorage.setItem(counterKey,'1');}
-  let n=parseInt(localStorage.getItem(counterKey)||'1',10);
-  if(!Number.isFinite(n)||n<1)n=1;
-  try{
-    const used=new Set();
-    billHistoryForSource(source).forEach(h=>{
-      const d=new Date(h.time);
-      if(!isNaN(d.getTime()) && getTodayKeyForDate(d)===day){
-        const m=String(h.bill||'').match(/(\d+)$/);
-        if(m){const bn=parseInt(m[1],10);if(Number.isFinite(bn)&&bn>0)used.add(bn);}
-      }
-    });
-    while(used.has(n)) n++;
-  }catch(e){}
-  localStorage.setItem(dayKey,day);localStorage.setItem(counterKey,String(n));
-  return prefix+String(n).padStart(3,'0');
+  // Bill number format only: DDMMYYHHMMSS, using India local time.
+  const parts=new Intl.DateTimeFormat('en-GB',{
+    timeZone:'Asia/Kolkata',day:'2-digit',month:'2-digit',year:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+  }).formatToParts(new Date());
+  const v={};parts.forEach(p=>{if(p.type!=='literal')v[p.type]=p.value;});
+  return String(v.day)+String(v.month)+String(v.year)+String(v.hour)+String(v.minute)+String(v.second);
 }
 function billNumberAlreadyUsedToday(bill,source='billing'){
   const target=String(bill||'').trim(); if(!target)return false;
@@ -4103,17 +4093,26 @@ function billNumberAlreadyUsedToday(bill,source='billing'){
     return !isNaN(d.getTime()) && getTodayKeyForDate(d)===getTodayKey();
   });}catch(e){return false;}
 }
+// Billing and Calculator keep separate active bills, but share one uniqueness check.
+// This prevents a same-second timestamp collision across either invoice history
+// or the other window's currently active bill, without changing either cart.
+function billNumberUsedAcrossWindows(bill,source='billing'){
+  const target=String(bill||'').trim(); if(!target)return false;
+  if(billNumberAlreadyUsedToday(target,'billing')||billNumberAlreadyUsedToday(target,'calculator'))return true;
+  const otherSource=source==='calculator'?'billing':'calculator';
+  try{return String(localStorage.getItem(currentBillKey(otherSource))||'').trim()===target;}catch(e){return false;}
+}
 function getUniqueBillNo(preferred,source='billing'){
-  const prefix=billPrefix(source);
   let bill=String(preferred||'').trim();
-  // A new bill must use this branch's prefix. Existing saved bill numbers are
-  // allowed to remain unchanged when editing/reprinting that exact record.
-  const looksLikeThisBranch=new RegExp('^'+prefix.replace('-','\\-')+'\\d+$','i').test(bill);
-  if(!bill || !looksLikeThisBranch || billNumberAlreadyUsedToday(bill,source)){
-    bill=getDailyNextBillNo(source);
-    while(billNumberAlreadyUsedToday(bill,source)){
-      const n=parseInt(bill.match(/(\d+)$/)?.[1]||'0',10)+1;
-      bill=prefix+String(n).padStart(3,'0');
+  // Preserve this window's current unused number; new numbers use DDMMYYHHMMSS.
+  const looksLikeTimestamp=/^\d{12}(?:-\d{3})?$/.test(bill);
+  const alreadyUsed=b=>billNumberUsedAcrossWindows(b,source);
+  if(!bill || !looksLikeTimestamp || alreadyUsed(bill)){
+    const base=getDailyNextBillNo(source);
+    bill=base;
+    if(alreadyUsed(bill)){
+      let n=1;
+      while(alreadyUsed(bill))bill=base+'-'+String(n++).padStart(3,'0');
     }
   }
   localStorage.setItem(currentBillKey(source),bill);
@@ -4143,24 +4142,36 @@ function setBillingLiveMeta(bill){
 function startBillingLiveClock(){
   if(window.__billingClock)clearInterval(window.__billingClock);
   setBillingLiveMeta(getSavedBillNo('billing'));
-  window.__billingClock=setInterval(()=>{if(document.getElementById('billing-overlay')?.classList.contains('open'))setBillingLiveMeta(getSavedBillNo('billing'));},1000);
+  window.__billingClock=setInterval(()=>{
+    if(!document.getElementById('billing-overlay')?.classList.contains('open'))return;
+    // While starting a fresh, empty bill, keep its DDMMYYHHMMSS number live.
+    // Once items are added (or an old bill is being edited), preserve the bill number.
+    if(!billingCart.length && !editingBillingHistoryId){
+      const liveBill=getUniqueBillNo(getDailyNextBillNo('billing'),'billing');
+      const billInput=document.getElementById('invoice-bill-input');
+      if(billInput)billInput.value=liveBill;
+      const invoiceNo=document.getElementById('invoice-no');
+      if(invoiceNo)invoiceNo.textContent=liveBill;
+      setBillingLiveMeta(liveBill);
+    }else{
+      setBillingLiveMeta(getSavedBillNo('billing'));
+    }
+  },1000);
 }
 function invoiceSettingsKey(mode){return mode==='calculator'?CALCULATOR_INVOICE_SETTINGS_KEY:BILLING_INVOICE_SETTINGS_KEY;}
-// Shared invoice identity/footer settings: these intentionally sync between
-// Calculator Studio and POS Billing Studio. All other studio data remains branch-isolated.
-const INVOICE_COMMON_SHOP_KEY='invoice-common-shop-name';
-const INVOICE_COMMON_TITLE_KEY='invoice-common-title';
-const INVOICE_COMMON_FOOTER_KEY='invoice-common-footer-settings';
+// Calculator Studio and POS Billing Studio identity/footer settings are isolated by mode.
 function invoiceShopKey(mode){return mode==='calculator'?'calculator-invoice-shop-name':'billing-invoice-shop-name';}
 function invoiceTitleKey(mode){return mode==='calculator'?'calculator-invoice-title':'billing-invoice-title';}
 function invoiceFooterKey(mode){return mode==='calculator'?'calculator-invoice-footer-settings':'billing-invoice-footer-settings';}
-function getInvoiceFooterSettings(mode){try{return JSON.parse(localStorage.getItem(INVOICE_COMMON_FOOTER_KEY)||'{}')||{};}catch(e){return {};}}
-function saveInvoiceFooterSettings(mode){const v={footer1:document.getElementById('invoice-footer1-input')?.value||'PAYMENT RECEIVED',footer2:document.getElementById('invoice-footer2-input')?.value||'THANK YOU!',footer3:document.getElementById('invoice-footer3-input')?.value||'Visit Again!'};try{localStorage.setItem(INVOICE_COMMON_FOOTER_KEY,JSON.stringify(v));localStorage.setItem(invoiceFooterKey('calculator'),JSON.stringify(v));localStorage.setItem(invoiceFooterKey('billing'),JSON.stringify(v));}catch(e){};return v;}
+function getInvoiceFooterSettings(mode){const m=mode||getInvoiceSettingsMode();try{return JSON.parse(localStorage.getItem(invoiceFooterKey(m))||'{}')||{};}catch(e){return {};}}
+function saveInvoiceFooterSettings(mode){const m=mode||getInvoiceSettingsMode();const v={footer1:document.getElementById('invoice-footer1-input')?.value||'PAYMENT RECEIVED',footer2:document.getElementById('invoice-footer2-input')?.value||'THANK YOU!',footer3:document.getElementById('invoice-footer3-input')?.value||'Visit Again!'};try{localStorage.setItem(invoiceFooterKey(m),JSON.stringify(v));}catch(e){};return v;}
 function getInvoiceSettingsMode(){return (typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='calculator')?'calculator':'billing';}
 function getInvoiceDisplaySettings(mode){const m=mode||getInvoiceSettingsMode();const ids=['invoice-subtitle-input','invoice-footer1-input','invoice-footer2-input','invoice-footer3-input'];const vals={subtitle:document.getElementById(ids[0])?.value||'QUALITY PRODUCTS • BETTER LIVING',footer1:document.getElementById(ids[1])?.value||'PAYMENT RECEIVED',footer2:document.getElementById(ids[2])?.value||'THANK YOU!',footer3:document.getElementById(ids[3])?.value||'Visit Again!'};['shop','header','meta','items','calc','summary','payment','upi','footer','offer'].forEach(k=>{vals[k]=document.getElementById('invoice-show-'+k)?.checked!==false;});vals.customerName=document.getElementById('invoice-show-customer-name')?.checked!==false;vals.customerMobile=document.getElementById('invoice-show-customer-mobile')?.checked!==false;vals.customerAddress=document.getElementById('invoice-show-customer-address')?.checked!==false;vals.partyDetailsConfigured=true;vals.qr=document.getElementById('invoice-custom-qr')?.checked!==false;vals.mode=m;return vals;}
-function getInvoiceShopName(mode){try{return String(localStorage.getItem(INVOICE_COMMON_SHOP_KEY)||'').trim();}catch(e){return '';}}
-function getInvoiceTitleName(mode){try{return String(localStorage.getItem(INVOICE_COMMON_TITLE_KEY)||'').trim();}catch(e){return '';}}
-function saveInvoiceShopName(mode,name){name=String(name||'').trim();if(!name)return;try{localStorage.setItem(INVOICE_COMMON_SHOP_KEY,name);localStorage.setItem(invoiceShopKey('calculator'),name);localStorage.setItem(invoiceShopKey('billing'),name);}catch(e){}}
+// Read saved settings without touching the other Studio's live controls or preview.
+function getInvoiceDisplaySettingsFromStorage(mode){const m=mode==='billing'?'billing':'calculator';let saved={};try{saved=JSON.parse(localStorage.getItem(invoiceSettingsKey(m))||'{}')||{};}catch(e){}const foot=getInvoiceFooterSettings(m);const vals={subtitle:saved.subtitle??'QUALITY PRODUCTS • BETTER LIVING',footer1:foot.footer1??saved.footer1??'PAYMENT RECEIVED',footer2:foot.footer2??saved.footer2??'THANK YOU!',footer3:foot.footer3??saved.footer3??'Visit Again!',mode:m};['shop','header','meta','items','calc','summary','payment','upi','footer','offer'].forEach(k=>{vals[k]=k in saved?!!saved[k]:true;});vals.customerName=saved.partyDetailsConfigured===true&&('customerName' in saved)?saved.customerName!==false:true;vals.customerMobile=saved.partyDetailsConfigured===true&&('customerMobile' in saved)?saved.customerMobile!==false:true;vals.customerAddress=saved.partyDetailsConfigured===true&&('customerAddress' in saved)?saved.customerAddress!==false:true;vals.partyDetailsConfigured=true;vals.qr='qr' in saved?!!saved.qr:true;return vals;}
+function getInvoiceShopName(mode){const m=mode||getInvoiceSettingsMode();try{return String(localStorage.getItem(invoiceShopKey(m))||'').trim();}catch(e){return '';}}
+function getInvoiceTitleName(mode){const m=mode||getInvoiceSettingsMode();try{return String(localStorage.getItem(invoiceTitleKey(m))||'').trim();}catch(e){return '';}}
+function saveInvoiceShopName(mode,name){const m=mode||getInvoiceSettingsMode();name=String(name||'').trim();if(!name)return;try{localStorage.setItem(invoiceShopKey(m),name);}catch(e){}}
 function applyInvoiceDisplaySettings(mode){const m=mode||getInvoiceSettingsMode();const st=getInvoiceDisplaySettings(m);localStorage.setItem(invoiceSettingsKey(m),JSON.stringify(st));saveInvoiceShopName(m,document.getElementById('invoice-shop-name')?.value||'');return st;}
 function loadInvoiceDisplaySettings(mode){const m=mode||getInvoiceSettingsMode();let st={};try{st=JSON.parse(localStorage.getItem(invoiceSettingsKey(m))||'{}')||{};}catch(e){};const footerSaved=getInvoiceFooterSettings(m);const shop=document.getElementById('invoice-shop-name');const savedShop=getInvoiceShopName(m);if(shop)shop.value=savedShop||'YOUR SHOP NAME';const savedTitle=getInvoiceTitleName(m);const title=document.getElementById('invoice-title-input');if(title)title.value=savedTitle||'PAYMENT INVOICE';const defaults={subtitle:'QUALITY PRODUCTS • BETTER LIVING',footer1:'PAYMENT RECEIVED',footer2:'THANK YOU!',footer3:'Visit Again!'};const map={subtitle:st.subtitle,footer1:footerSaved.footer1??st.footer1,footer2:footerSaved.footer2??st.footer2,footer3:footerSaved.footer3??st.footer3};Object.entries(map).forEach(([k,v])=>{const el=document.getElementById('invoice-'+k+'-input');if(el)el.value=v!=null?String(v):defaults[k];});['shop','header','meta','items','calc','summary','payment','upi','footer','offer'].forEach(k=>{const el=document.getElementById('invoice-show-'+k);if(el)el.checked=k in st?!!st[k]:true;});const cn=document.getElementById('invoice-show-customer-name');if(cn)cn.checked=(st.partyDetailsConfigured===true&&('customerName' in st))?st.customerName!==false:true;const cm=document.getElementById('invoice-show-customer-mobile');if(cm)cm.checked=(st.partyDetailsConfigured===true&&('customerMobile' in st))?st.customerMobile!==false:true;const ca=document.getElementById('invoice-show-customer-address');if(ca)ca.checked=(st.partyDetailsConfigured===true&&('customerAddress' in st))?st.customerAddress!==false:true;const qr=document.getElementById('invoice-custom-qr');if(qr)qr.checked='qr' in st?!!st.qr:true;}
 function getPersistentShopName(mode){return getInvoiceShopName(mode||getInvoiceSettingsMode());}
@@ -4172,11 +4183,11 @@ function saveShopNameSettings(){
   saveInvoiceShopName(getInvoiceSettingsMode(),name);
   applyInvoiceDisplaySettings();
   const p=document.getElementById('invoice-shop');if(p)p.textContent=name;
-  try{renderPOSInvoice58Preview();}catch(e){}
+  try{if(getInvoiceSettingsMode()==='billing')renderPOSInvoice58Preview();else renderCalculatorInvoiceCustomizationPreview();}catch(e){}
   alert('Shop Name saved successfully. It will be reused after closing and reopening the browser.');
 }
 function applySavedInvoiceDisplaySettings(st,mode){if(!st||typeof st!=='object')return;const map={subtitle:st.subtitle,footer1:st.footer1,footer2:st.footer2,footer3:st.footer3};Object.entries(map).forEach(([k,v])=>{const el=document.getElementById('invoice-'+k+'-input');if(el&&v!=null)el.value=String(v);});['shop','header','meta','items','calc','summary','payment','upi','footer','offer'].forEach(k=>{const el=document.getElementById('invoice-show-'+k);if(el&&k in st)el.checked=!!st[k];});const cn=document.getElementById('invoice-show-customer-name');if(cn&&'customerName' in st)cn.checked=!!st.customerName;const cm=document.getElementById('invoice-show-customer-mobile');if(cm&&'customerMobile' in st)cm.checked=!!st.customerMobile;const ca=document.getElementById('invoice-show-customer-address');if(ca&&'customerAddress' in st)ca.checked=!!st.customerAddress;const qr=document.getElementById('invoice-custom-qr');if(qr&&'qr' in st)qr.checked=!!st.qr;applyInvoiceDisplaySettings(mode||getInvoiceSettingsMode());}
-function saveInvoiceSettings(mode){const m=mode||getInvoiceSettingsMode();const bill=document.getElementById('invoice-bill-input')?.value.trim();if(bill&&m==='billing')localStorage.setItem('invoice-current-bill',bill);const shop=document.getElementById('invoice-shop-name');const title=document.getElementById('invoice-title-input');if(shop&&String(shop.value||'').trim())saveInvoiceShopName(m,shop.value);if(title)try{const v=String(title.value||'').trim();if(v){localStorage.setItem(INVOICE_COMMON_TITLE_KEY,v);localStorage.setItem(invoiceTitleKey('calculator'),v);localStorage.setItem(invoiceTitleKey('billing'),v);}}catch(e){}saveInvoiceFooterSettings(m);applyInvoiceDisplaySettings(m);}
+function saveInvoiceSettings(mode){const m=mode||getInvoiceSettingsMode();const bill=document.getElementById('invoice-bill-input')?.value.trim();if(bill&&m==='billing')localStorage.setItem('invoice-current-bill',bill);const shop=document.getElementById('invoice-shop-name');const title=document.getElementById('invoice-title-input');if(shop&&String(shop.value||'').trim())saveInvoiceShopName(m,shop.value);if(title)try{const v=String(title.value||'').trim();if(v)localStorage.setItem(invoiceTitleKey(m),v);}catch(e){}saveInvoiceFooterSettings(m);applyInvoiceDisplaySettings(m);}
 function getInvoiceExpression(mode){const m=requireInvoiceMode(mode);if(m==='billing'){const b=billingBranch;return String((b.lastCalculationExpression&&b.lastCalculationExpression!=='0')?b.lastCalculationExpression:(b.sourceExpression||b.expr||'0')).trim()||'0';}return String((lastCalculationExpression&&lastCalculationExpression!=='0')?lastCalculationExpression:(expr||displayExpr?.innerText||'0')).trim()||'0';}
 function getCurrentCalculatorAmount(){
   const shown=parseFloat(displayRes.innerText);
@@ -4307,7 +4318,7 @@ function openInvoiceCustomizer(mode='calculator'){
   invoiceCustomizationMode=mode==='billing'?'billing':'calculator';
   if(window.invoiceStudioUpdateCouponButton)window.invoiceStudioUpdateCouponButton();
   const couponToggle=document.getElementById('invoice-studio-coupon-enabled');
-  if(couponToggle)couponToggle.checked=localStorage.getItem('pos_coupon_voucher_enabled_v1')==='1';
+  if(couponToggle){const couponKey=invoiceCustomizationMode==='billing'?'pos_coupon_voucher_enabled_v1':'calculator_coupon_voucher_enabled_v1';couponToggle.checked=localStorage.getItem(couponKey)==='1';}
   // Billing payment-mode UPI is already loaded by Billing/History state.
   // Do not reload localStorage here because History may carry a per-mode UPI snapshot.
   invoiceStudioActiveTemplateId=null; invoiceStudioLastSnapshot=null;
@@ -4381,8 +4392,8 @@ function closeInvoiceCustomizer(){
 document.getElementById('invoice-custom-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeInvoiceCustomizer();});
 let invoiceCustomizerLiveTimer=0;
 function scheduleInvoiceCustomizerLiveUpdate(){clearTimeout(invoiceCustomizerLiveTimer);invoiceCustomizerLiveTimer=setTimeout(()=>{try{saveInvoiceSettings(invoiceCustomizationMode);if(invoiceCustomizationMode==='billing')renderPOSInvoice58Preview();else renderCalculatorInvoiceCustomizationPreview();invoiceStudioRenderPreview();}catch(e){console.warn('Invoice customization live update:',e);}},120);}
-['invoice-shop-name','invoice-title-input','invoice-bill-input','invoice-upi-input','invoice-subtitle-input','invoice-footer1-input','invoice-footer2-input','invoice-footer3-input','invoice-show-shop','invoice-show-header','invoice-show-meta','invoice-show-items','invoice-show-calc','invoice-show-offer','invoice-show-summary','invoice-show-payment','invoice-show-customer-name','invoice-show-customer-mobile','invoice-show-customer-address','invoice-show-upi','invoice-show-footer','invoice-custom-qr'].forEach(id=>{const el=document.getElementById(id);if(el){const ev=el.type==='checkbox'?'change':'input';el.addEventListener(ev,()=>{if(id==='invoice-upi-input'){ if(invoiceCustomizationMode==='billing'){ persistBillingModeUpi(billingPaymentMode,el.value.trim()); } else { upiInput.value=el.value.trim(); } }scheduleInvoiceCustomizerLiveUpdate();});}});
-window.addEventListener('storage',e=>{if(![INVOICE_COMMON_SHOP_KEY,INVOICE_COMMON_TITLE_KEY,INVOICE_COMMON_FOOTER_KEY].includes(e.key))return;try{loadInvoiceDisplaySettings(invoiceCustomizationMode);if(invoiceCustomizationMode==='billing')renderPOSInvoice58Preview();else renderCalculatorInvoiceCustomizationPreview();invoiceStudioRenderPreview();}catch(err){console.warn('Invoice common settings sync:',err);}});
+['invoice-shop-name','invoice-title-input','invoice-bill-input','invoice-upi-input','invoice-subtitle-input','invoice-footer1-input','invoice-footer2-input','invoice-footer3-input','invoice-show-shop','invoice-show-header','invoice-show-meta','invoice-show-items','invoice-show-calc','invoice-show-offer','invoice-show-summary','invoice-show-payment','invoice-show-customer-name','invoice-show-customer-mobile','invoice-show-customer-address','invoice-show-upi','invoice-show-footer','invoice-custom-qr'].forEach(id=>{const el=document.getElementById(id);if(el){const ev=el.type==='checkbox'?'change':'input';el.addEventListener(ev,()=>{if(id==='invoice-upi-input'){ if(invoiceCustomizationMode==='billing'){ persistBillingModeUpi(billingPaymentMode,el.value.trim()); } else { upiInput.value=el.value.trim(); } }if(invoiceCustomizationMode==='billing'&&(id==='invoice-shop-name'||id==='invoice-title-input')){saveInvoiceSettings('billing');return;}scheduleInvoiceCustomizerLiveUpdate();});}});['invoice-shop-name','invoice-title-input'].forEach(id=>document.getElementById(id)?.addEventListener('blur',()=>{if(invoiceCustomizationMode==='billing')scheduleInvoiceCustomizerLiveUpdate();}));
+// No cross-Studio storage listener: each Studio loads only its own saved settings.
 loadInvoiceDisplaySettings();
 /* ================================================================
    INVOICE STUDIO V2 — branch-isolated templates, paper sizing,
@@ -4939,17 +4950,9 @@ function saveHistoryItemForInvoice(amount,extra={}){
   return true;
 }
 function advanceBillNumberAfterSave(bill,source){source=source==='calculator'?'calculator':source==='billing'?'billing':requireInvoiceMode(source);
-  const day=getTodayKey(), dayKey=billDayKey(source), counterKey=billCounterKey(source), currentKey=currentBillKey(source), prefix=billPrefix(source);
-  localStorage.setItem(dayKey,day);
-  const n=parseInt(String(bill).match(/(\d+)$/)?.[1]||'0',10);
-  if(Number.isFinite(n)&&n>=1){
-    const current=getDailyNextBillNo(source);
-    const next=Math.max(parseInt(String(current).match(/(\d+)$/)?.[1]||'1',10),n+1);
-    const nextBill=prefix+String(next).padStart(3,'0');
-    localStorage.setItem(counterKey,String(next));
-    localStorage.setItem(currentKey,nextBill);
-    if(source==='billing')setBillingLiveMeta(nextBill);
-  }
+  const nextBill=getDailyNextBillNo(source);
+  localStorage.setItem(currentBillKey(source),nextBill);
+  if(source==='billing')setBillingLiveMeta(nextBill);
 }
 
 function wrapReceipt(text,width=32){const out=[];String(text).split('\n').forEach(line=>{if(!line){out.push('');return;}while(line.length>width){out.push(line.slice(0,width));line=line.slice(width);}out.push(line);});return out.join('\n');}
@@ -4958,7 +4961,12 @@ function padR(s,w){s=String(s);return s.length>=w?s.slice(0,w):s+' '.repeat(w-s.
 function invoiceStudioAlignLine(value,align,width){const s=String(value??'');if(s.length>=width)return s.slice(0,width);if(align==='right')return ' '.repeat(width-s.length)+s;if(align==='center'){const left=Math.floor((width-s.length)/2);return ' '.repeat(left)+s+' '.repeat(width-s.length-left);}return s;}
 function buildPhysicalInvoiceText(x){
   const mode=(x&&x.settingsMode)?(x.settingsMode==='billing'?'billing':'calculator'):(invoiceCustomizationMode==='billing'?'billing':'calculator');
+  // POS live preview reloads saved settings while typing. Keep the active Shop Name
+  // input untouched so a trailing space is not trimmed before the next word is typed.
+  const liveBillingShopInput=mode==='billing'?document.getElementById('invoice-shop-name'):null;
+  const liveBillingShopValue=liveBillingShopInput?liveBillingShopInput.value:null;
   try{loadInvoiceDisplaySettings(mode);}catch(e){}
+  if(liveBillingShopInput)liveBillingShopInput.value=liveBillingShopValue;
   const st=invoiceStudioResolveFinalSettings(mode,(x&&x.displaySettings&&typeof x.displaySettings==='object')?x.displaySettings:getInvoiceDisplaySettings(mode));
   const paper=String(st.paper||'58'), W=paper==='80'?48:32;
   const cols=st.cols||INVOICE_STUDIO_DEFAULT.cols;
@@ -5334,7 +5342,7 @@ window.addEventListener("load",()=>{updateRecycleCount();loadInvoiceDisplaySetti
 <div class="db-billing-overlay" id="billing-overlay" aria-hidden="true">
   <div class="db-billing-window">
     <div class="db-billing-header">
-      <div class="billing-header-left"><div class="billing-header-main"><div class="billing-header-copy"><div class="db-billing-title">🛒 Billing</div><div class="db-billing-sub">Select items → make bill → generate invoice</div><div class="billing-live-meta"><span>📅 <b id="billing-live-date">--/--/--</b></span><span>🕐 <b id="billing-live-time">--:--:--</b></span><span>🧾 Bill No <b id="billing-live-bill">1</b></span></div></div><div id="billing-header-shortcuts" class="billing-header-shortcuts"><button id="billing-open-studio-shortcut" class="billing-header-shortcut billing-studio-shortcut" type="button" onclick="openBillingStudioShortcut()" aria-label="Open POS Billing Studio"><span>🧾 POS STUDIO</span></button><button id="billing-open-history-shortcut" class="billing-header-shortcut billing-history-shortcut" type="button" onclick="openBillingInvoiceHistoryShortcut()" aria-label="Open POS Invoice History"><span>📋 INVOICE HISTORY</span></button></div><button id="billing-previous-bill" class="billing-previous-bill" type="button" onclick="openPreviousBillingBill()" aria-label="View previous bill"><span class="billing-previous-label">PREVIOUS BILL</span><strong id="billing-previous-amount">₹ 0</strong><small id="billing-previous-number">No previous bill</small></button></div><button id="billing-printer-status" class="billing-printer-status" onclick="openPrinterPanel()" type="button" aria-label="Printer connection status">🔴 Printer: Not connected</button></div>
+      <div class="billing-header-left"><div class="billing-header-main"><div class="billing-header-copy"><div class="db-billing-title">🛒 Billing</div><div class="db-billing-sub">Select items → make bill → generate invoice</div><div class="billing-live-meta"><span>📅 <b id="billing-live-date">--/--/--</b></span><span>🕐 <b id="billing-live-time">--:--:--</b></span><span>🧾 Bill No <b id="billing-live-bill">1</b></span></div></div><div id="billing-header-shortcuts" class="billing-header-shortcuts"><button id="billing-open-studio-shortcut" class="billing-header-shortcut billing-studio-shortcut" type="button" onclick="openBillingStudioShortcut()" aria-label="Open POS Billing Studio"><span>🧾 POS STUDIO</span></button><button id="billing-open-history-shortcut" class="billing-header-shortcut billing-history-shortcut" type="button" onclick="openBillingInvoiceHistoryShortcut()" aria-label="Open POS Invoice History"><span>📋 INVOICE HISTORY</span></button><button id="billing-open-calculator-shortcut" class="billing-header-shortcut billing-calculator-shortcut" type="button" onclick="openCalculatorBillingShortcut()" aria-label="Open Calculator Billing"><span>🧮 CALCULATOR BILLING</span></button></div><button id="billing-previous-bill" class="billing-previous-bill" type="button" onclick="openPreviousBillingBill()" aria-label="View previous bill"><span class="billing-previous-label">PREVIOUS BILL</span><strong id="billing-previous-amount">₹ 0</strong><small id="billing-previous-number">No previous bill</small></button></div><button id="billing-printer-status" class="billing-printer-status" onclick="openPrinterPanel()" type="button" aria-label="Printer connection status">🔴 Printer: Not connected</button></div>
       <button class="close-history" onclick="closeBilling()">✕</button>
     </div>
     <div class="db-billing-body">
@@ -5728,7 +5736,7 @@ function renderItemDatabase(){
   const list=q?db.filter(x=>String(x.name).toLowerCase().includes(q)||String(x.code||"").toLowerCase().includes(q)):db;
   const show=list.slice(0,150);
   if(!show.length){box.innerHTML='<div class="db-empty">No item found</div>';return;}
-  box.innerHTML=show.map(x=>'<div class="db-item"><div class="db-item-main"><div class="db-item-name">'+escapeHtml(x.name)+'</div><div class="db-item-meta">'+(x.code?'<span class="db-item-code">Barcode: '+escapeHtml(x.code)+'</span><span class="db-barcode-badge">BARCODE</span> • ':'Barcode: — • ')+'MRP '+moneyShort(x.mrp)+' • Rate '+moneyShort(x.rate)+'</div></div><div class="db-item-actions"><button onclick="addDBItemToBilling('+Number(x.id)+')">Add</button><button onclick="editDBItem('+Number(x.id)+')">Edit</button><button class="danger" onclick="deleteDBItem('+Number(x.id)+')">Delete</button></div></div>').join("");
+  box.innerHTML=show.map(x=>'<div class="db-item"><div class="db-item-main"><div class="db-item-name">'+escapeHtml(x.name)+'</div><div class="db-item-meta">'+(x.code?'<span class="db-item-code">Barcode: '+escapeHtml(x.code)+'</span><span class="db-barcode-badge">BARCODE</span> • ':'Barcode: — • ')+'MRP '+moneyShort(x.mrp)+' • Rate '+moneyShort(x.rate)+' • Purchase '+((x.purchase!==undefined&&x.purchase!==null&&x.purchase!=="")?moneyShort(x.purchase):'—')+'</div></div><div class="db-item-actions"><button onclick="addDBItemToBilling('+Number(x.id)+')">Add</button><button onclick="editDBItem('+Number(x.id)+')">Edit</button><button class="danger" onclick="deleteDBItem('+Number(x.id)+')">Delete</button></div></div>').join("");
   if(list.length>150) box.insertAdjacentHTML("beforeend",'<div class="db-empty">Showing first 150 results. Search to narrow the list.</div>');
 }
 document.getElementById("item-db-overlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeItemDatabase();});
@@ -6577,7 +6585,9 @@ async function openBilling(){
     return {...x,purchase,discountSelected:Boolean(x.discountSelected),discountPercent};
   });
   if(billingCart.length) localStorage.setItem(BILLING_UNFINISHED_KEY,"1"); else localStorage.removeItem(BILLING_UNFINISHED_KEY);
-  const currentBill=getSavedBillNo('billing');
+  const currentBill=(!billingCart.length && !editingBillingHistoryId)
+    ? getUniqueBillNo(getDailyNextBillNo('billing'),'billing')
+    : getSavedBillNo('billing');
   const billInput=document.getElementById('invoice-bill-input');
   if(billInput && !editingBillingHistoryId) billInput.value=currentBill;
   setBillingLiveMeta(currentBill);
@@ -8085,7 +8095,6 @@ function closePOSInvoicePreview(){
 }
 function renderPOSInvoice58Preview(){
   const box=document.getElementById('pos-58-preview'); if(!box)return;
-  loadInvoiceDisplaySettings('billing');
   const items=getPOSBillingInvoiceItems();
   items.forEach(x=>{x.name=invoiceStudioNormalizeItemName(x.name,x);});
   if(items.length) setBillingItemsState(items.map(x=>({...x})));
@@ -8097,14 +8106,14 @@ function renderPOSInvoice58Preview(){
   const loyaltyRedeemAmount=Number(billingTotals().loyaltyRedeemAmount)||0;
   const discount=Number(billingTotal.discount)||Math.max(0,mrp-baseTotal);
   const paymentCharge=Number(billingTotal.paymentCharge)||0;
-  const shop=(getInvoiceShopName('billing')||document.getElementById('invoice-shop-name')?.value||'YOUR SHOP NAME').trim();
-  const title=(document.getElementById('invoice-title-input')?.value||getInvoiceTitleName('billing')||'PAYMENT INVOICE').trim();
+  const shop=(getInvoiceShopName('billing')||'YOUR SHOP NAME').trim();
+  const title=(getInvoiceTitleName('billing')||'PAYMENT INVOICE').trim();
   const bi=document.getElementById('invoice-bill-input'); let bill=(bi?.value||'').trim()||getSavedBillNo('billing'); if(bi)bi.value=bill;
   const upi=getPaymentUpiId() || '';
   const payment=String(billingPaymentMode||'Cash');
   const now=new Date(); const dt=formatInvoiceDateTimeShort(now);
   const qrVisible=shouldShowInvoiceQRForPayment(billingPaymentMode) && isValidUpiId(upi);
-  const st={...getInvoiceDisplaySettings('billing'),qr:qrVisible};
+  const st={...getInvoiceDisplaySettingsFromStorage('billing'),qr:qrVisible};
   const cleanName=it=>invoiceStudioCleanName(invoiceStudioNormalizeItemName(it?.name,it),st,32);
   const esc=v=>escapeHtml(String(v)); const money=v=>formatInvoiceMoney(v);
   let html='';
@@ -8127,14 +8136,14 @@ function renderPOSInvoice58Preview(){
   if(st.footer)html+='<div class="r58-foot"><b>'+esc(st.footer1)+'</b><strong>'+esc(st.footer2)+'</strong><span>'+esc(st.footer3)+'</span></div>';
   // Preview uses the same character-grid text builder as the physical ESC/POS
   // receipt, so enabled columns, wrapping, summary labels and spacing match paper.
-  const physicalSt=invoiceStudioResolveFinalSettings('billing',getInvoiceDisplaySettings('billing'));
+  const physicalSt=invoiceStudioResolveFinalSettings('billing',getInvoiceDisplaySettingsFromStorage('billing'));
   physicalSt.qr = shouldShowInvoiceQRForPayment(billingPaymentMode) && isValidUpiId(upi);
   const physicalInvoice={mrpTotal:mrp,billTotal:total,subtotal:mrp,discount,loyaltyRedeemAmount,total,upi,paymentMode:billingPaymentMode,settingsMode:'billing',partyId:partyForPreview?.id||'',partyName:partyForPreview?.name||'',partyMobile:partyForPreview?.mobile||'',partyAddress:partyForPreview?.address||'',displaySettings:physicalSt,chargeTreatment:billingChargeTreatment,paymentCharge};
   const physicalText=buildPhysicalInvoiceText(physicalInvoice);
   const physicalTextNoQr=physicalText.replace(/\n--- SCAN & PAY ---\nUPI ID: .*\nPay using any UPI app\n/,'');
   const physicalPaper=String(physicalSt.paper||'58')==='80'?'80':'58';
   box.style.width=physicalPaper+'mm';box.style.maxWidth='100%';
-  const physicalShop=(getInvoiceShopName('billing')||document.getElementById('invoice-shop-name')?.value||'YOUR SHOP NAME').trim().toUpperCase();
+  const physicalShop=(getInvoiceShopName('billing')||'YOUR SHOP NAME').trim().toUpperCase();
   const physicalLines=physicalTextNoQr.split('\n');
   const physicalBody=physicalLines.map((line,index)=>'<div class="r58-physical-line'+(line.trim()===physicalShop?' r58-physical-shop':'')+'">'+(line?esc(line):'&nbsp;')+'</div>').join('');
   const physicalOffer=physicalSt.offer!==false?getBillingOfferMessage(billingPaymentMode):''; const physicalQr=physicalSt.qr?'<div class="r58-physical-qr"><div id="pos-preview-qr"></div><b>SCAN &amp; PAY</b><small>UPI ID: '+esc(upi)+'</small>'+(physicalOffer?'<small>Offer: '+esc(physicalOffer)+'</small>':'')+'<small>Pay using any UPI app</small></div>':'';
@@ -11960,7 +11969,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function cv2Write(){
     try{
       localStorage.setItem(CV2_KEY,JSON.stringify(cv2State));
-      const en=cv$('invoice-studio-coupon-enabled')||cv$('cv-enabled');
+      const en=cv$('cv-enabled');
       if(en)localStorage.setItem('pos_coupon_voucher_enabled_v1',en.checked?'1':'0');
     }catch(e){}
   }
@@ -12572,10 +12581,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(typeof updateCouponDesignControls==='function')try{updateCouponDesignControls()}catch(e){}
   };
   window.invoiceStudioSetCouponEnabled=function(on){
-    try{localStorage.setItem('pos_coupon_voucher_enabled_v1',on?'1':'0')}catch(e){}
+    const mode=(typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='billing')?'billing':'calculator';
+    try{localStorage.setItem(mode==='billing'?'pos_coupon_voucher_enabled_v1':'calculator_coupon_voucher_enabled_v1',on?'1':'0')}catch(e){}
     const a=cv$('invoice-studio-coupon-enabled');if(a)a.checked=!!on;
-    const b=cv$('cv-enabled');if(b)b.checked=!!on;
-    const c=cv$('cv-design-enabled');if(c)c.checked=!!on;
+    if(mode==='billing'){
+      const b=cv$('cv-enabled');if(b)b.checked=!!on;
+      const c=cv$('cv-design-enabled');if(c)c.checked=!!on;
+    }
   };
 
   /* Keep saved designs portable: migration happens once on first use. */
@@ -12684,19 +12696,26 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 #billing-overlay .billing-header-shortcut{flex:0 0 104px;min-width:90px;align-self:stretch;display:flex;align-items:center;justify-content:center;padding:5px 4px;border:1px solid #8ab8ff;border-radius:10px;color:#fff;box-shadow:0 2px 7px #0003;cursor:pointer;white-space:normal;text-align:center;font-size:10px;font-weight:900;line-height:1.2}
 #billing-overlay .billing-studio-shortcut{background:linear-gradient(145deg,#2584f5,#125bc2)}
 #billing-overlay .billing-history-shortcut{background:linear-gradient(145deg,#8248ed,#5726b8)}
+#billing-overlay .billing-calculator-shortcut{background:linear-gradient(145deg,#0f9f9a,#08716d)}
 #billing-overlay .billing-header-shortcut:active{transform:scale(.98)}
 #billing-overlay .billing-previous-bill{flex:0 0 104px;min-width:90px;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border:1px solid #25d366;border-radius:10px;background:linear-gradient(145deg,#159447,#087536);color:#fff;box-shadow:0 2px 7px #0003;cursor:pointer;white-space:normal}
 #billing-overlay .billing-previous-label{font-size:8px;font-weight:900;line-height:1.1}
 #billing-overlay .billing-previous-bill strong{font-size:17px;font-weight:900;line-height:1.15}
 #billing-overlay .billing-previous-bill small{font-size:8px;font-weight:800;line-height:1.1;overflow-wrap:anywhere}
 #billing-overlay .billing-previous-bill:active{transform:scale(.98)}
-@media(max-width:520px){#billing-overlay .billing-header-main{gap:5px}#billing-overlay .billing-header-shortcuts{gap:3px}#billing-overlay .billing-header-shortcut{flex-basis:92px;min-width:84px;padding:4px 3px;font-size:8px}#billing-overlay .billing-previous-bill{flex-basis:92px;min-width:84px;padding:4px 3px}#billing-overlay .billing-previous-bill strong{font-size:15px}#billing-overlay .billing-previous-label,#billing-overlay .billing-previous-bill small{font-size:7px}}
+@media(max-width:520px){#billing-overlay .billing-header-main{gap:3px}#billing-overlay .billing-header-shortcuts{gap:2px}#billing-overlay .billing-header-shortcut{flex:0 1 68px;min-width:0;width:68px;padding:4px 2px;font-size:7px;overflow-wrap:anywhere}#billing-overlay .billing-previous-bill{flex:0 1 68px;min-width:0;width:68px;padding:4px 2px}#billing-overlay .billing-previous-bill strong{font-size:13px}#billing-overlay .billing-previous-label,#billing-overlay .billing-previous-bill small{font-size:7px}}
 </style>
 <script id="billing-previous-bill-button-script">
 function openBillingStudioShortcut(){
   // Treat Studio as a child of the already-open Billing window.
   window.invoiceStudioReturnMode='billing';
   if(typeof openInvoiceCustomizer==='function') openInvoiceCustomizer('billing');
+}
+function openCalculatorBillingShortcut(){
+  // Return to the existing Calculator Billing window without changing billing data.
+  if(typeof closeBilling==='function') closeBilling();
+  if(typeof window.saLaunch==='function') window.saLaunch('calculator');
+  else document.body.classList.remove('home-mode');
 }
 function openBillingInvoiceHistoryShortcut(){
   // Mark History as a child of Billing so its close button returns to Billing,
@@ -13208,3 +13227,89 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 </body>
 </html>
+<style id="billing-qty-touch-target-adjustment">
+/* Only enlarge QTY +/- touch targets and rebalance the item row. */
+#billing-overlay .billing-cart-head,
+#billing-overlay .billing-cart-row{
+  grid-template-columns:22px minmax(0,1fr) 42px 88px 52px 60px 60px 32px !important;
+  gap:2px !important;
+  box-sizing:border-box !important;
+  width:100% !important;
+}
+#billing-overlay .billing-cart-row .qty-stepper{
+  display:grid !important;
+  grid-template-columns:30px minmax(24px,1fr) 30px !important;
+  gap:2px !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+#billing-overlay .billing-cart-row .qty-stepper button{
+  width:30px !important;
+  min-width:30px !important;
+  max-width:30px !important;
+  height:42px !important;
+  min-height:42px !important;
+  padding:0 !important;
+  font-size:18px !important;
+  line-height:42px !important;
+  flex:none !important;
+  touch-action:manipulation !important;
+}
+#billing-overlay .billing-cart-row .qty-stepper input{
+  height:42px !important;
+  line-height:42px !important;
+  min-width:0 !important;
+  padding:0 1px !important;
+  box-sizing:border-box !important;
+}
+@media(max-width:520px){
+  #billing-overlay .billing-cart-head,
+  #billing-overlay .billing-cart-row{
+    grid-template-columns:22px minmax(0,1fr) 38px 88px 48px 58px 58px 30px !important;
+    gap:2px !important;
+  }
+}
+</style>
+
+<style id="billing-all-columns-width-adjust">
+/* Only adjust Billing item-table column widths so every column fits the full bar. */
+#billing-overlay .billing-cart-head,
+#billing-overlay .billing-cart-row{
+  grid-template-columns:28px minmax(90px,2.5fr) minmax(48px,.55fr) minmax(94px,1.3fr) minmax(54px,.7fr) minmax(72px,.9fr) minmax(78px,1fr) 42px !important;
+  gap:4px !important;
+  width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+#billing-overlay .billing-cart-row .qty-stepper{
+  grid-template-columns:30px minmax(28px,1fr) 30px !important;
+  gap:3px !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+#billing-overlay .billing-cart-row .qty-stepper button{
+  width:30px !important;
+  min-width:30px !important;
+  max-width:30px !important;
+}
+#billing-overlay .billing-cart-row .cart-del{
+  width:100% !important;
+  min-width:0 !important;
+}
+@media(max-width:520px){
+  #billing-overlay .billing-cart-head,
+  #billing-overlay .billing-cart-row{
+    grid-template-columns:24px minmax(70px,2fr) minmax(38px,.55fr) minmax(88px,1.35fr) minmax(42px,.65fr) minmax(58px,.85fr) minmax(62px,.95fr) 34px !important;
+    gap:2px !important;
+  }
+  #billing-overlay .billing-cart-row .qty-stepper{
+    grid-template-columns:26px minmax(25px,1fr) 26px !important;
+    gap:2px !important;
+  }
+  #billing-overlay .billing-cart-row .qty-stepper button{
+    width:26px !important;
+    min-width:26px !important;
+    max-width:26px !important;
+  }
+}
+</style>
