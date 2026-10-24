@@ -8936,7 +8936,7 @@ try{
 <div id="bs-usb-detail" class="bs-note">Tap Check USB Status. Browser detection is limited; a green status means an authorized USB device is visible, not that printing is confirmed.</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="bs-btn bs-primary" onclick="bsConnectPrinter()">🔌 Connect Printer</button><button class="bs-btn" onclick="bsDisconnectPrinter()">⏏️ Disconnect</button><button class="bs-btn" onclick="bsCheckUSB()">🔄 Check USB Status</button><button class="bs-btn" onclick="bsUsbHelp()">USB Permission / Help</button></div>
 <div class="bs-note">Last check: <span id="bs-usb-time">Not checked</span> · Print verification: <b id="bs-usb-print-result">Not tested</b></div>
-</div><div class="bs-fields"><label>Printer Model<select id="bs-printer" onchange="bsPrinterChanged()"><option>TVS LP46 NEO USB</option></select></label><label>Orientation<select id="bs-orient"><option>Portrait</option><option>Landscape</option></select></label><label>Labels Per Row<select id="bs-setting-up" onchange="document.getElementById('bs-up').value=this.value;bsRender()"><option value="2" selected>2UP</option><option value="1">1UP</option><option value="3">3UP</option><option value="4">4UP</option></select></label><label>Sticker Size<select id="bs-setting-size" onchange="if(this.value!=='custom')$('bs-size').value=this.value;else bsApplyCustomSize();bsRender()"><option value="38x25">38 × 25 mm</option><option value="50x25">50 × 25 mm</option><option value="25x15">25 × 15 mm</option><option value="custom">Custom Size…</option></select></label><label>Custom Width (mm)<input id="bs-custom-w" type="number" min="5" max="108" step="0.5" value="38"></label><label>Custom Height (mm)<input id="bs-custom-h" type="number" min="5" max="300" step="0.5" value="25"></label><label>Sensor / Media<select id="bs-sensor"><option>Gap / Die-cut labels</option><option>Black Mark</option><option>Continuous</option></select></label><label>Sensor / Feed Gap (mm)<input id="bs-gap" type="number" step="0.1" min="0" max="20" value="0" oninput="bsUpdateGapDots()"><span id="bs-gap-dots" class="bs-gap-dots">0.00 mm ≈ 0 dots @ 203 DPI</span></label><label>Row / Media Width (mm)<input id="bs-media-w" type="number" min="5" max="108" step="0.5" value="80"></label><label>Row / Media Height (mm)<input id="bs-media-h" type="number" min="5" max="300" step="0.5" value="25"></label><label>2-Sticker Horizontal Gap (mm)<input id="bs-sticker-gap" type="number" min="0" max="10" step="0.1" value="1"></label><label>Sticker Top/Bottom Content Gap (mm)<input id="bs-content-v" type="number" min="0" max="10" step="0.1" value="2"></label><label>Printer DPI<select id="bs-dpi"><option value="203">203 DPI</option><option value="300">300 DPI</option><option value="600">600 DPI</option></select></label><label>Horizontal Offset (mm)<input id="bs-xoff" type="number" step="0.5" min="-15" max="15" value="0"></label><label>Vertical Offset (mm)<input id="bs-yoff" type="number" step="0.5" min="-15" max="15" value="0"></label><label>Darkness (driver setting)<input id="bs-darkness" type="range" min="0" max="15" value="8" oninput="$('bs-dark-val').textContent=this.value"></label><span>Level: <b id="bs-dark-val">8</b> (saved preference)</span><label>Print Speed (driver setting)<select id="bs-speed"><option value="2">2 ips — Slow</option><option value="3">3 ips</option><option value="4">4 ips</option><option value="5">5 ips — Fast</option></select></label><label>Saved Profile<select id="bs-profile"><option value="default">Default</option><option value="38x25">38×25 mm</option><option value="50x25">50×25 mm</option><option value="25x15">25×15 mm</option></select></label></div><button class="bs-btn" onclick="bsLoadProfile()">Load Profile</button> <button class="bs-btn bs-primary" onclick="bsPhysicalSaveSettings()">Save Settings / Profile</button> <button class="bs-btn" onclick="bsPhysicalTestPrint()">🧪 Test Print</button> <button class="bs-btn" onclick="bsPhysicalCalibrate()">📏 Calibrate Label</button> <button class="bs-btn" onclick="bsPhysicalFeed()">↕️ Feed Label</button> <button class="bs-btn" onclick="bsResetPrinterSettings()">♻️ Reset Defaults</button><p class="bs-note">Settings/profile are saved locally. Test Print, Feed Label and Calibrate Label attempt TSPL commands over an authorized WebUSB bulk interface; compatibility depends on printer firmware/USB interface. Darkness/speed settings remain preferences and are not sent.</p></section>
+</div><div class="bs-fields"><label>Printer Model<select id="bs-printer" onchange="bsPrinterChanged()"><option>TVS LP46 NEO USB</option></select></label><label>Orientation<select id="bs-orient"><option>Portrait</option><option>Landscape</option></select></label><label>Labels Per Row<select id="bs-setting-up" onchange="document.getElementById('bs-up').value=this.value;bsUpdateMediaWidth();bsRender()"><option value="2" selected>2UP</option><option value="1">1UP</option><option value="3">3UP</option><option value="4">4UP</option></select></label><label>Sticker Size<select id="bs-setting-size" onchange="if(this.value!=='custom')$('bs-size').value=this.value;else bsApplyCustomSize();bsRender()"><option value="38x25">38 × 25 mm</option><option value="50x25">50 × 25 mm</option><option value="25x15">25 × 15 mm</option><option value="custom">Custom Size…</option></select></label><label>Custom Width (mm)<input id="bs-custom-w" type="number" min="5" max="108" step="0.5" value="38"></label><label>Custom Height (mm)<input id="bs-custom-h" type="number" min="5" max="300" step="0.5" value="25"></label><label>Sensor / Media<select id="bs-sensor"><option>Gap / Die-cut labels</option><option>Black Mark</option><option>Continuous</option></select></label><label>Sensor / Feed Gap (mm)<input id="bs-gap" type="number" step="0.1" min="0" max="20" value="0" oninput="bsUpdateGapDots()"><span id="bs-gap-dots" class="bs-gap-dots">0.00 mm ≈ 0 dots @ 203 DPI</span></label><label>Row / Media Width (mm)<input id="bs-media-w" type="number" min="5" max="108" step="0.5" value="80"></label><label>Row / Media Height (mm)<input id="bs-media-h" type="number" min="5" max="300" step="0.5" value="25"></label><label>2-Sticker Horizontal Gap (mm)<input id="bs-sticker-gap" type="number" min="0" max="10" step="0.1" value="1"></label><label>Sticker Top/Bottom Content Gap (mm)<input id="bs-content-v" type="number" min="0" max="10" step="0.1" value="2"></label><label>Printer DPI<select id="bs-dpi"><option value="203">203 DPI</option><option value="300">300 DPI</option><option value="600">600 DPI</option></select></label><label>Horizontal Offset (mm)<input id="bs-xoff" type="number" step="0.5" min="-15" max="15" value="0"></label><label>Vertical Offset (mm)<input id="bs-yoff" type="number" step="0.5" min="-15" max="15" value="0"></label><label>Darkness (driver setting)<input id="bs-darkness" type="range" min="0" max="15" value="8" oninput="$('bs-dark-val').textContent=this.value"></label><span>Level: <b id="bs-dark-val">8</b> (saved preference)</span><label>Print Speed (driver setting)<select id="bs-speed"><option value="2">2 ips — Slow</option><option value="3">3 ips</option><option value="4">4 ips</option><option value="5">5 ips — Fast</option></select></label><label>Saved Profile<select id="bs-profile"><option value="default">Default</option><option value="38x25">38×25 mm</option><option value="50x25">50×25 mm</option><option value="25x15">25×15 mm</option></select></label></div><button class="bs-btn" onclick="bsLoadProfile()">Load Profile</button> <button class="bs-btn bs-primary" onclick="bsPhysicalSaveSettings()">Save Settings / Profile</button> <button class="bs-btn" onclick="bsPhysicalTestPrint()">🧪 Test Print</button> <button class="bs-btn" onclick="bsPhysicalCalibrate()">📏 Calibrate Label</button> <button class="bs-btn" onclick="bsPhysicalFeed()">↕️ Feed Label</button> <button class="bs-btn" onclick="bsResetPrinterSettings()">♻️ Reset Defaults</button><p class="bs-note">Settings/profile are saved locally. Test Print, Feed Label and Calibrate Label attempt TSPL commands over an authorized WebUSB bulk interface; compatibility depends on printer firmware/USB interface. Darkness/speed settings remain preferences and are not sent.</p></section>
 </div>
 
 <style id="bs-dragdrop-tspl-designer">
@@ -9059,6 +9059,7 @@ try{
 @media(max-width:600px){
   .bs-physical-label .bs-product-name{font-size:clamp(7px,2.6mm,11px)!important}
 }
+#bs-design-preview .bs-drag-field.bs-field-mrp{overflow:visible!important;text-overflow:clip!important;max-width:none!important}
 </style>
 
 <style id="bs-up-layout-style">
@@ -9104,7 +9105,42 @@ window.bsDisconnectPrinter=async()=>{try{if(bsUsbDevice?.opened){for(const i of 
 window.bsFeedLabel=async()=>{try{const size=$('bs-size').value.split('x'),w=Number(size[0])||38,h=Number(size[1])||25,gap=Math.max(0,Number($('bs-gap').value)||0);await bsSendTSPL(`SIZE ${w} mm,${h} mm\r\nGAP ${gap} mm,0 mm\r\nFORMFEED\r\n`);alert('Feed command sent using the saved/current label gap. If label did not advance, use printer FEED or compatible native driver.')}catch(e){alert('Feed failed: '+(e.message||e)+'\nUse printer FEED button or compatible native driver if USB bulk access is unsupported.')}};
 window.bsResetPrinterSettings=()=>{if(!confirm('Reset Barcode Studio printer preferences to defaults?'))return;localStorage.removeItem(S);$('bs-printer').value='TVS LP46 NEO USB';$('bs-orient').value='Portrait';$('bs-up').value='1';$('bs-setting-up').value='1';$('bs-setting-size').value='38x25';$('bs-size').value='38x25';$('bs-custom-w').value='38';$('bs-custom-h').value='25';$('bs-sensor').selectedIndex=0;$('bs-gap').value='2';$('bs-dpi').value='203';$('bs-xoff').value='0';$('bs-yoff').value='0';$('bs-darkness').value='8';$('bs-dark-val').textContent='8';$('bs-speed').value='2';$('bs-profile').value='default';bsRender();alert('Printer preferences reset locally. Physical label defaults: 38 × 25 mm, 2 mm gap, 203 DPI.')};
 window.bsApplyCustomSize=()=>{if($('bs-setting-size').value==='custom'){let w=Number($('bs-custom-w').value),h=Number($('bs-custom-h').value);if(!(w>=5&&w<=108&&h>=5&&h<=300)){alert('Enter valid custom dimensions: width 5–108mm, height 5–300mm.');return false}let v=w+'x'+h;$('bs-size').value=v;return true}return true};
-window.bsLoadProfile=()=>{let v=$('bs-profile').value; if(v!=='default'){$('bs-setting-size').value=v;$('bs-size').value=v;}bsRender();alert('Profile loaded. Adjust and Save Settings to store it.')};
+window.bsUpdateMediaWidth=function(){
+  const dims=String($('bs-size')?.value||'38x25').split('x').map(Number);
+  const w=dims[0], up=Math.max(1,Math.min(4,Number($('bs-setting-up')?.value)||Number($('bs-up')?.value)||1));
+  const gap=Math.max(0,Number($('bs-sticker-gap')?.value)||0);
+  if(Number.isFinite(w)&&w>0){
+    $('bs-media-w').value=String(Math.round((w*up+gap*(up-1))*10)/10);
+    if($('bs-up'))$('bs-up').value=String(up);
+    try{const st=JSON.parse(localStorage.getItem(S)||'{}');st.up=up;st.mediaW=Number($('bs-media-w').value);localStorage.setItem(S,JSON.stringify(st));}catch(_){}
+  }
+};
+window.bsLoadProfile=()=>{
+  const v=$('bs-profile').value;
+  let size=$('bs-size')?.value||'38x25';
+  if(v!=='default'){
+    size=v;
+    $('bs-setting-size').value=v;
+    $('bs-size').value=v;
+    const z=String(v).split('x');
+    if(z.length===2){$('bs-custom-w').value=z[0];$('bs-custom-h').value=z[1];}
+  }else{
+    const saved=(()=>{try{return JSON.parse(localStorage.getItem(S)||'null')}catch(_){return null}})();
+    if(saved?.size){size=String(saved.size);$('bs-size').value=size;const z=size.split('x');if(z.length===2){$('bs-custom-w').value=z[0];$('bs-custom-h').value=z[1];}$('bs-setting-size').value=['38x25','50x25','25x15'].includes(size)?size:'custom';}
+  }
+  const dims=String(size).split('x').map(Number);
+  const w=dims[0],h=dims[1];
+  if(Number.isFinite(w)&&w>0&&Number.isFinite(h)&&h>0){
+    const up=Math.max(1,Math.min(4,Number($('bs-setting-up')?.value)||Number($('bs-up')?.value)||1));
+    const gap=Math.max(0,Number($('bs-sticker-gap')?.value)||0);
+    $('bs-media-w').value=String(Math.round((w*up+gap*(up-1))*10)/10);
+    $('bs-media-h').value=String(h);
+    if($('bs-up'))$('bs-up').value=String(up);
+  }
+  bsRender();
+  try{const st=JSON.parse(localStorage.getItem(S)||'{}');st.size=size;st.mediaW=Number($('bs-media-w').value);st.mediaH=Number($('bs-media-h').value);st.up=Number($('bs-setting-up').value)||1;st.profile=v;localStorage.setItem(S,JSON.stringify(st));}catch(_){ }
+  alert('Profile loaded. Media Width and Height updated automatically.');
+};
 window.bsCheckUSB=async()=>{const dot=$('bs-usb-dot'),status=$('bs-usb-status'),detail=$('bs-usb-detail');$('bs-usb-time').textContent=new Date().toLocaleString();if(!('usb' in navigator)){dot.style.background='#dc2626';status.textContent='🔴 WEB USB UNAVAILABLE';detail.textContent='This browser/WebView cannot inspect USB devices. Use the Android native USB bridge/TVS-compatible app; browser print may still work through the system dialog.';return}try{const devices=await navigator.usb.getDevices();if(devices.length){dot.style.background='#16a34a';status.textContent='🟢 AUTHORIZED USB DEVICE DETECTED';detail.textContent=devices.length+' authorized USB device(s) visible to this page. This does not confirm TVS LP46 NEO identity or print readiness.'}else{dot.style.background='#d97706';status.textContent='🟡 NO AUTHORIZED USB DEVICE';detail.textContent='USB API is available, but no permitted device is visible. Connect printer by OTG and grant access through a compatible native/WebUSB workflow.'}}catch(e){dot.style.background='#dc2626';status.textContent='🔴 USB CHECK FAILED';detail.textContent='Could not inspect USB devices: '+(e.message||e)}};
 window.bsUsbHelp=()=>alert('For reliable TVS LP46 NEO USB OTG status, Android must expose a compatible USB permission/connection bridge to this app. Plain offline HTML cannot reliably detect every connect/disconnect event or send printer commands. Use the Android app/driver permission prompt, then tap Check USB Status.');
 if('usb' in navigator){navigator.usb.addEventListener('connect',()=>bsCheckUSB());navigator.usb.addEventListener('disconnect',()=>bsCheckUSB())}
@@ -9252,14 +9288,14 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
     "114131","311141","411131","211412","211214","211232","2331112"
   ];
 
-  function svgBars(pattern,widthPx,heightPx){
+  function svgBars(pattern,widthPx,heightPx,minModule=.6){
     const total=pattern.split('').reduce((s,n)=>s+Number(n),0);
-    const module=Math.max(.6,widthPx/total);
+    const module=Math.max(minModule,widthPx/total);
     const w=total*module, h=heightPx;
     let x=0, black=true, rects='';
     for(const ch of pattern){
       const n=Number(ch)*module;
-      if(black) rects+=`<rect x="${x.toFixed(2)}" y="0" width="${n.toFixed(2)}" height="${h.toFixed(2)}" fill="#000"/>`;
+      if(black) rects+=`<rect x="${x.toFixed(2)}" y="0" width="${n.toFixed(2)}" height="${h.toFixed(2)}" fill="#333"/>`;
       x+=n; black=!black;
     }
     return {w,h,rects};
@@ -9282,7 +9318,7 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
     vals.slice(1).forEach((v,i)=>sum+=v*(i+1));
     vals.push(sum%103,106);
     const pattern=vals.map(v=>C128[v]).join('');
-    const b=svgBars(pattern,w,h);
+    const b=svgBars(pattern,w,h,0);
     return `<svg class="bs-barcode-svg" xmlns="http://www.w3.org/2000/svg" width="${b.w}" height="${b.h}" viewBox="0 0 ${b.w} ${b.h}" preserveAspectRatio="none">${b.rects}</svg>`;
   }
 
@@ -9374,7 +9410,14 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
     const size=String(st.size||'38x25');
     const presets=['38x25','50x25','25x15'];
     set('bs-setting-size',presets.includes(size)?size:'custom');
-    if(!presets.includes(size)){const z=size.split('x');set('bs-custom-w',z[0]||38);set('bs-custom-h',z[1]||25);}
+    // Always restore the visible custom width/height from the saved profile,
+    // including preset sizes such as 25x15. Otherwise the inputs retain their
+    // HTML defaults (38x25) after reopening even though the profile is loaded.
+    const savedDims=size.split('x');
+    if(savedDims.length===2){
+      set('bs-custom-w',savedDims[0]||38);
+      set('bs-custom-h',savedDims[1]||25);
+    }
     set('bs-sensor',st.sensor||'Gap / Die-cut labels');
     set('bs-gap',st.gap??2); set('bs-dpi',st.dpi??203);
     set('bs-xoff',st.xoff??0); set('bs-yoff',st.yoff??0);
@@ -9421,15 +9464,20 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
    */
   const BS_LAYOUT_KEY='sat_barcode_layout_v2';
   function defaultBSField(key,spec){
-    const w=spec.wmm,h=spec.hmm,p=spec.pad;
+    const w=spec.wmm,h=spec.hmm;
+    // Keep a safe blank margin inside the physical sticker so barcode/text
+    // do not run into the rounded/cut edges. This changes only default
+    // content geometry; printer/media settings and saved data are untouched.
+    const p=Math.max(1.5,Math.min(2,w*.045));
+    const innerW=Math.max(8,w-p*2);
     const defaults={
-      name:{x:p,y:p,w:Math.max(12,w-p*2),h:3.2,font:10},
-      barcode:{x:p,y:spec.showName?5.0:p,w:Math.max(12,w-p*2),h:Math.max(7,Math.min(10,h*.40)),font:8},
-      price:{x:p,y:h-6.5,w:Math.max(8,w/2-p),h:3.2,font:8},
-      mrp:{x:w/2,y:h-6.5,w:Math.max(8,w/2-p),h:3.2,font:8},
-      cost:{x:p,y:Math.max(p,h-9.8),w:Math.max(8,w/2-p),h:2.8,font:8},
-      custom:{x:p,y:h-3.2,w:Math.max(12,w-p*2),h:2.8,font:8},
-      code:{x:p,y:h-3.2,w:Math.max(12,w-p*2),h:2.5,font:7}
+      name:{x:p,y:p,w:innerW,h:3.2,font:10},
+      barcode:{x:p,y:spec.showName?5.0:p,w:innerW,h:Math.max(7,Math.min(10,h*.40)),font:8},
+      price:{x:p,y:h-6.5,w:Math.max(8,w/2-p*1.5),h:3.2,font:8},
+      mrp:{x:w/2,y:h-6.5,w:Math.min(w/2,Math.max(11,w/2-p*1.5)),h:3.2,font:8},
+      cost:{x:p,y:Math.max(p,h-9.8),w:Math.max(8,w/2-p*1.5),h:2.8,font:8},
+      custom:{x:p,y:h-3.2,w:innerW,h:2.8,font:8},
+      code:{x:p,y:h-3.2,w:innerW,h:2.5,font:7}
     };
     return {...(defaults[key]||defaults.custom)};
   }
@@ -9446,6 +9494,12 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
       fields[k].h=Math.max(.5,Math.min(hmm,Number(fields[k].h)||d.h));
       fields[k].x=Math.max(0,Math.min(Math.max(0,wmm-fields[k].w),Number(fields[k].x)||0));
       fields[k].y=Math.max(0,Math.min(Math.max(0,hmm-fields[k].h),Number(fields[k].y)||0));
+      // Keep each field fully inside the physical label, but do not force
+      // an extra safe margin: that shifted user-applied X/Y positions.
+      fields[k].w=Math.min(fields[k].w,Math.max(.5,wmm-fields[k].x));
+      fields[k].h=Math.min(fields[k].h,Math.max(.5,hmm-fields[k].y));
+      fields[k].x=Math.max(0,Math.min(Math.max(0,wmm-fields[k].w),fields[k].x));
+      fields[k].y=Math.max(0,Math.min(Math.max(0,hmm-fields[k].h),fields[k].y));
       fields[k].font=Math.max(4,Math.min(32,Number(fields[k].font)||d.font));
     }
     return {fields};
@@ -9762,7 +9816,15 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
     const fields=layout.fields||{};
     const addField=(key,text,kind,opts={})=>{
       if(!opts.show)return;
-      const q=fields[key]||defaultBSField(key,spec);
+      let q={...(fields[key]||defaultBSField(key,spec))};
+      /* MRP must show the complete label (including both decimal digits).
+         When Selling Price is hidden, give MRP the full printable row instead
+         of the old half-width box. Keep it inside the physical label. */
+      if(key==='mrp' && !spec.showPrice){
+        const edge=Math.max(1.2,Math.min(2,spec.wmm*0.05));
+        q.x=edge;
+        q.w=Math.max(8,spec.wmm-edge*2);
+      }
       const d=document.createElement('div');
       d.className='bs-drag-field bs-field-'+key;
       d.dataset.bsField=key;
@@ -9777,7 +9839,7 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
         d.style.fontWeight='800'; d.style.lineHeight='1.05';
         d.style.display='flex'; d.style.alignItems='center'; d.style.justifyContent='center';
         d.style.textAlign='center'; d.style.whiteSpace='normal'; d.style.overflow='hidden';
-        d.style.overflowWrap='anywhere'; d.style.wordBreak='break-word'; d.style.textOverflow='clip';
+        d.style.overflowWrap='anywhere'; d.style.wordBreak='break-word'; d.style.textOverflow=d.classList.contains('bs-field-mrp')?'visible':'clip';
         d.style.minWidth='0'; d.style.maxWidth='100%'; d.style.maxHeight='100%';
       }else{
         d.style.overflow='hidden'; d.style.display='flex'; d.style.alignItems='center'; d.style.justifyContent='center';
@@ -9939,6 +10001,26 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
   }
   window.bsPhysicalSaveSettings=saveSettingsSafe;
 
+  // Persist printer-window preferences as the user changes them, so leaving
+  // Barcode Studio or closing/reopening the app does not discard the setup.
+  const bsPersistentSettingIds = [
+    'bs-printer','bs-orient','bs-setting-up','bs-setting-size','bs-size',
+    'bs-custom-w','bs-custom-h','bs-sensor','bs-gap','bs-media-w','bs-media-h',
+    'bs-sticker-gap','bs-content-v','bs-dpi','bs-xoff','bs-yoff',
+    'bs-darkness','bs-speed','bs-profile','bs-barcode-type'
+  ];
+  let bsAutoSaveTimer = null;
+  function bsAutoSavePrinterPreferences(e){
+    if(!e.target || !bsPersistentSettingIds.includes(e.target.id)) return;
+    if(e.target.id==='bs-setting-size' && e.target.value==='custom') return;
+    clearTimeout(bsAutoSaveTimer);
+    bsAutoSaveTimer=setTimeout(()=>{
+      try { saveSettingsSafe(); } catch(err) { console.warn('Printer preferences auto-save:',err); }
+    },150);
+  }
+  document.addEventListener('change',bsAutoSavePrinterPreferences);
+  document.addEventListener('input',bsAutoSavePrinterPreferences);
+
   // Browser print is deliberately separate from direct USB.
   window.bsPhysicalPrint=()=>window.bsPhysicalUsbPrint();;
 
@@ -10031,6 +10113,27 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
       });
     }
 
+    // Physical-printer-only Code 128 renderer: align every module to whole printer dots.
+    // Fractional-width SVG bars can be rounded inconsistently when converted to 1-bit TSPL.
+    function svgCode128PrinterDots(value,maxWidthDots,heightDots){
+      const s=String(value??'');
+      if([...s].some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)>126)) throw Error('Code 128 supports printable ASCII text here.');
+      const vals=[104,...[...s].map(c=>c.charCodeAt(0)-32)];
+      let sum=104; vals.slice(1).forEach((v,i)=>sum+=v*(i+1));
+      vals.push(sum%103,106);
+      const pattern=vals.map(v=>C128[v]).join('');
+      const total=pattern.split('').reduce((a,n)=>a+Number(n),0);
+      const module=Math.max(1,Math.floor(maxWidthDots/total));
+      const actualW=total*module;
+      let x=0,black=true,rects='';
+      for(const ch of pattern){
+        const width=Number(ch)*module;
+        if(black)rects+=`<rect x="${x}" y="0" width="${width}" height="${heightDots}" fill="#000"/>`;
+        x+=width; black=!black;
+      }
+      return {svg:`<svg xmlns="http://www.w3.org/2000/svg" width="${actualW}" height="${heightDots}" viewBox="0 0 ${actualW} ${heightDots}">${rects}</svg>`,width:actualW};
+    }
+
     /*
      * Render the SAME mm layout to a 1-bit bitmap at printer DPI.
      * This avoids TSPL built-in font metrics (which caused the physical
@@ -10071,9 +10174,28 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
       if(f.barcode){
         const q=shift(f.barcode);
         const bw=Math.max(2,toD(q.w)), bh=Math.max(2,toD(q.h));
-        const svg=barcodeSvg(spec.type,spec.code,bw,bh);
-        const img=await loadSvgImage(svg);
-        ctx.drawImage(img,toD(q.x),toD(q.y),bw,bh);
+        // Physical-scan fix only: reserve white quiet zones on both sides.
+        // A barcode printed right up to the edge of its field is often rejected
+        // by handheld/mobile scanners even when the bars themselves look dark.
+        // Targeted fix: give only the lipstick295 Code 128 barcode a little more
+        // printable width on small labels, while retaining a white quiet zone.
+        const isLipstick120Code128=spec.type==='CODE128' && String(spec.code||'').trim().toLowerCase()==='lipstick120';
+        const quiet=isLipstick120Code128
+          ? Math.min(Math.round(dpi/25.4*0.8),Math.floor(bw*.05))
+          : Math.min(Math.round(dpi/25.4*2),Math.floor(bw*.12)); // up to 2 mm per side
+        const innerW=Math.max(2,bw-quiet*2);
+        const isPhysicalLipstick120Code128=isLipstick120Code128;
+        if(isPhysicalLipstick120Code128){
+          const crisp=svgCode128PrinterDots(spec.code,innerW,bh);
+          const img=await loadSvgImage(crisp.svg);
+          ctx.imageSmoothingEnabled=false;
+          ctx.drawImage(img,toD(q.x)+quiet+Math.floor((innerW-crisp.width)/2),toD(q.y),crisp.width,bh);
+        }else{
+          const svg=barcodeSvg(spec.type,spec.code,innerW,bh);
+          const img=await loadSvgImage(svg);
+          ctx.imageSmoothingEnabled=false;
+          ctx.drawImage(img,toD(q.x)+quiet,toD(q.y),innerW,bh);
+        }
       }
 
       if(spec.showPrice)await drawText('price');
@@ -10093,7 +10215,8 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
         for(let x=0;x<w;x++){
           const i=(y*w+x)*4;
           const r=img[i],g=img[i+1],b=img[i+2],a=img[i+3];
-          const black=a>80 && ((r+g+b)/3)<180;
+          // Keep dark anti-aliased edge pixels so thin barcode bars print solid and readable.
+          const black=a>80 && ((r+g+b)/3)<220;
           // TVS LP46 NEO physical TSPL bitmap polarity:
           // this printer expects 0 = print/dark and 1 = white.
           // The browser canvas uses black=dark, so invert the raster bit here.
@@ -10120,8 +10243,11 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
       else if(sensor.includes('black'))setup+=`BLINE ${Math.max(.1,Number(st.gap)||.1)} mm,0 mm\r\n`;
       else setup+=`GAP ${Math.max(0,Number(st.gap)||0)} mm,0 mm\r\n`;
       setup+='DIRECTION 1\r\nCLS\r\n';
-      let payload=enc.encode(setup);
 
+      // Send one row per USB/TSPL transfer. Large combined binary payloads
+      // can exceed the printer/WebUSB transfer buffer (commonly after ~8 labels).
+      // Keeping each row as its own complete TSPL job avoids that limit while
+      // preserving the selected copies count and labels-per-row layout.
       for(let r=0;r<rows;r++){
         const canvas=document.createElement('canvas');
         canvas.width=mediaDotsW;
@@ -10137,15 +10263,12 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
         }
 
         const bmp=canvasToTsplBitmap(canvas);
-        // TSPL BITMAP expects RAW binary raster bytes after the comma,
-        // not an ASCII hexadecimal string. Sending ASCII hex produces a
-        // blank/corrupt physical label on printers that implement TSPL.
+        // TSPL BITMAP expects RAW binary raster bytes after the comma.
         const head=enc.encode(`BITMAP 0,0,${bmp.widthBytes},${bmp.height},0,`);
-        const tail=enc.encode(`\r\nPRINT 1,1\r\n${r<rows-1?'CLS\r\n':''}`);
-        payload=join(payload,head,bmp.bytes,tail);
+        const tail=enc.encode('\r\nPRINT 1,1\r\n');
+        const payload=join(enc.encode(setup),head,bmp.bytes,tail);
+        await window.bsSendTSPL(payload);
       }
-
-      await window.bsSendTSPL(payload);
       if($('bs-usb-print-result'))$('bs-usb-print-result').textContent='✓ USB TSPL bitmap sent';
 
       const h=readK(H);
@@ -10194,7 +10317,7 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
 #bs-physical-info{line-height:1.45}
 .bs-gap-dots{display:block;font-size:9px;color:var(--muted,#7a8495);margin-top:3px;font-weight:700}
 #bs-design-preview .bs-drag-label,#bs-print-preview .bs-physical-label{box-sizing:border-box!important;transform-origin:top left!important}
-#bs-design-preview .bs-drag-label::after{content:"PHYSICAL MM / TSPL COORDINATE MODEL";position:absolute;right:1mm;bottom:.6mm;font-size:2.2mm;line-height:1;color:#777;pointer-events:none;opacity:.55;letter-spacing:.05mm}
+#bs-design-preview .bs-drag-label::after{content:"";position:absolute;right:1mm;bottom:.6mm;font-size:2.2mm;line-height:1;color:#777;pointer-events:none;opacity:.55;letter-spacing:.05mm}
 </style>
 <style id="bs-final-printer-authority">
 /* FINAL: Printer Window is the only visible source for Labels Per Row. */
@@ -13225,7 +13348,72 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<script id="bs-all-sticker-sizes-media-sync">
+(()=>{
+  const $=id=>document.getElementById(id);
+  let lastWarnedWidth=0;
+  function syncMedia(showWarning=false){
+    const size=String($('bs-size')?.value||'38x25').split('x').map(Number);
+    const w=size[0],h=size[1];
+    const up=Math.max(1,Math.min(4,Number($('bs-setting-up')?.value)||Number($('bs-up')?.value)||1));
+    const gap=Math.max(0,Number($('bs-sticker-gap')?.value)||0);
+    if(!Number.isFinite(w)||w<=0||!Number.isFinite(h)||h<=0)return;
+    const mediaW=Math.round((w*up+gap*(up-1))*10)/10;
+    if($('bs-media-w'))$('bs-media-w').value=String(mediaW);
+    if($('bs-media-h'))$('bs-media-h').value=String(h);
+    // Keep the custom dimension fields in sync with the selected label size.
+    // Previously these fields could retain stale values from a different profile.
+    if($('bs-custom-w'))$('bs-custom-w').value=String(w);
+    if($('bs-custom-h'))$('bs-custom-h').value=String(h);
+    if($('bs-up'))$('bs-up').value=String(up);
+    // Do not write to localStorage from startup/render synchronization. The old
+    // startup sync ran before saved settings were loaded and overwrote the
+    // saved label width/height when reopening the app. Explicit Save Settings
+    // and Load Profile handlers remain responsible for saving configuration.
+    if(showWarning && mediaW>108 && lastWarnedWidth!==mediaW){
+      lastWarnedWidth=mediaW;
+      alert('Warning: Required media width is '+mediaW+' mm, which exceeds the TVS LP 46 NEO maximum print width of 108 mm. Reduce Labels Per Row or sticker width.');
+    }
+    if(mediaW<=108)lastWarnedWidth=0;
+  }
+  window.bsUpdateMediaWidth=()=>syncMedia(true);
+  const oldLoad=window.bsLoadProfile;
+  if(typeof oldLoad==='function')window.bsLoadProfile=function(){const result=oldLoad.apply(this,arguments);syncMedia(true);return result;};
+  document.addEventListener('change',e=>{
+    if(!e.target||!['bs-setting-up','bs-setting-size','bs-custom-w','bs-custom-h','bs-sticker-gap'].includes(e.target.id))return;
+    if(e.target.id==='bs-custom-w'||e.target.id==='bs-custom-h'){
+      if($('bs-setting-size')?.value==='custom' && typeof window.bsApplyCustomSize==='function')window.bsApplyCustomSize();
+    }
+    syncMedia(true);
+  });
+  document.addEventListener('input',e=>{
+    if(!e.target||!['bs-custom-w','bs-custom-h','bs-sticker-gap'].includes(e.target.id))return;
+    if($('bs-setting-size')?.value==='custom' && typeof window.bsApplyCustomSize==='function')window.bsApplyCustomSize();
+    syncMedia(false);
+  });
+  setTimeout(()=>syncMedia(false),0);
+})();
+</script>
+
 </body>
+
+<style id="bs-sticker-content-fit-final">
+/* Only Barcode Studio sticker content: keep artwork inside safe label margins. */
+#barcodeStudio .bs-physical-label{
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+#barcodeStudio .bs-physical-label .bs-drag-field{
+  box-sizing:border-box!important;
+  max-width:calc(100% - 3mm)!important;
+  overflow:hidden!important;
+}
+#barcodeStudio .bs-physical-label .bs-drag-field[data-kind="text"]{
+  white-space:nowrap!important;
+  text-overflow:clip!important;
+}
+</style>
+
 </html>
 <style id="billing-qty-touch-target-adjustment">
 /* Only enlarge QTY +/- touch targets and rebalance the item row. */
@@ -13313,3 +13501,58 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 }
 </style>
+
+<!-- Final fix: make Custom Width/Height authoritative and persist the exact dimensions. -->
+<script id="bs-custom-dimensions-persistence-fix">
+(()=>{
+  const $=id=>document.getElementById(id);
+  const KEY='sat_barcode_printer_v1';
+  function applyCustomDimensions(save=true){
+    const selector=$('bs-setting-size');
+    if(!selector || selector.value!=='custom') return false;
+    const w=Number($('bs-custom-w')?.value), h=Number($('bs-custom-h')?.value);
+    if(!Number.isFinite(w)||!Number.isFinite(h)||w<5||w>108||h<5||h>300) return false;
+    const size=`${w}x${h}`;
+    const up=Math.max(1,Math.min(4,Number($('bs-setting-up')?.value)||Number($('bs-up')?.value)||1));
+    const gap=Math.max(0,Number($('bs-sticker-gap')?.value)||0);
+    if($('bs-size')) $('bs-size').value=size;
+    if($('bs-media-w')) $('bs-media-w').value=String(Math.round((w*up+gap*(up-1))*10)/10);
+    if($('bs-media-h')) $('bs-media-h').value=String(h);
+    if($('bs-up')) $('bs-up').value=String(up);
+    if(save){
+      try{
+        const old=JSON.parse(localStorage.getItem(KEY)||'{}')||{};
+        Object.assign(old,{size,mediaW:Number($('bs-media-w')?.value)||w,mediaH:h,up,profile:$('bs-profile')?.value||'default'});
+        localStorage.setItem(KEY,JSON.stringify(old));
+      }catch(e){console.warn('Custom label dimensions save failed',e)}
+    }
+    try{window.bsPhysicalRender?.()}catch(e){}
+    return true;
+  }
+  window.bsApplyCustomSize=()=>{
+    if($('bs-setting-size')?.value!=='custom') return true;
+    return applyCustomDimensions(true);
+  };
+  ['input','change'].forEach(type=>document.addEventListener(type,e=>{
+    if(!e.target) return;
+    if(['bs-custom-w','bs-custom-h','bs-setting-size','bs-setting-up','bs-sticker-gap'].includes(e.target.id)){
+      if($('bs-setting-size')?.value==='custom') applyCustomDimensions(true);
+    }
+  },true));
+  window.addEventListener('pageshow',()=>{
+    try{
+      const st=JSON.parse(localStorage.getItem(KEY)||'{}')||{};
+      const size=String(st.size||'');
+      if(size && !['38x25','50x25','25x15'].includes(size)){
+        const z=size.split('x');
+        if(z.length===2 && Number(z[0])>=5 && Number(z[1])>=5){
+          if($('bs-setting-size'))$('bs-setting-size').value='custom';
+          if($('bs-custom-w'))$('bs-custom-w').value=z[0];
+          if($('bs-custom-h'))$('bs-custom-h').value=z[1];
+          if($('bs-size'))$('bs-size').value=size;
+        }
+      }
+    }catch(e){}
+  });
+})();
+</script>
