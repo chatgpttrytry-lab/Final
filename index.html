@@ -10650,8 +10650,8 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
 </style>
 
 <script id="sa-landscape-mode-button">
-// Home-screen Landscape ON/OFF toggle. Orientation locking is supported only
-// by some browsers/PWAs and must be requested from a user gesture.
+// App-wide orientation toggle: ON requests landscape; OFF requests portrait.
+// Fullscreen and orientation locks are browser/PWA dependent.
 (function(){
   const KEY='sa-landscape-mode';
   function isOn(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
@@ -10660,32 +10660,46 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
     const on=isOn();
     btn.textContent=on?'✓ Landscape ON':'↻ Landscape OFF';
     btn.setAttribute('aria-label',on?'Turn landscape mode off':'Turn landscape mode on');
-    btn.title=on?'Tap to turn landscape mode off':'Tap to turn landscape mode on';
+    btn.title=on?'Tap to use full-screen portrait mode':'Tap to use landscape mode';
+  }
+  async function requestFullscreen(){
+    if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+      try{await document.documentElement.requestFullscreen();}catch(e){}
+    }
+  }
+  async function setOrientation(mode){
+    if(screen.orientation && typeof screen.orientation.lock==='function'){
+      await screen.orientation.lock(mode);
+      return true;
+    }
+    return false;
   }
   window.saLandscapeModeEnabled=isOn;
   window.updateLandscapeModeButton=paintButton;
   window.enableLandscapeMode=async function(){
     const btn=document.getElementById('landscape-mode-btn');
-    if(isOn()){
-      try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}
-      try{localStorage.setItem(KEY,'0');}catch(e){}
-      paintButton();
-      return;
-    }
+    const turnOn=!isOn();
     try{
-      if(!document.fullscreenElement && document.documentElement.requestFullscreen){
-        try{await document.documentElement.requestFullscreen();}catch(e){}
-      }
-      if(screen.orientation && typeof screen.orientation.lock==='function'){
-        await screen.orientation.lock('landscape');
+      await requestFullscreen();
+      if(turnOn){
+        const locked=await setOrientation('landscape');
         try{localStorage.setItem(KEY,'1');}catch(e){}
         paintButton();
-        return;
+        if(!locked && btn)btn.title='Rotate your device to landscape if it does not rotate automatically';
+      }else{
+        // Explicitly request portrait instead of merely unlocking orientation.
+        let locked=false;
+        try{locked=await setOrientation('portrait');}catch(e){}
+        if(!locked){try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}}
+        try{localStorage.setItem(KEY,'0');}catch(e){}
+        paintButton();
+        if(!locked && btn)btn.title='Rotate your device to portrait if it does not rotate automatically';
       }
-      if(btn)btn.textContent='Rotate device ↻';
     }catch(e){
-      if(btn)btn.textContent='Landscape unavailable';
-      setTimeout(paintButton,2200);
+      // Keep the selected mode even if this browser does not support orientation lock.
+      try{localStorage.setItem(KEY,turnOn?'1':'0');}catch(err){}
+      paintButton();
+      if(btn)btn.title='Orientation locking is not supported by this browser; rotate the device if needed';
     }
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintButton,{once:true});
