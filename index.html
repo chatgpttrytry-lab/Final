@@ -6594,6 +6594,13 @@ function restoreBillingPartyFromRecovery(recovery){
 }
 
 async function openBilling(){
+  // Ask supported mobile browsers to open Billing in landscape. This must be
+  // attempted directly from the user's tap; browsers may reject it in a normal tab.
+  try{
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      screen.orientation.lock('landscape').catch(function(){});
+    }
+  }catch(e){}
   try{if(typeof refreshPreviousBillingBillButton==='function')refreshPreviousBillingBillButton();}catch(e){}
   try{if(window.__billingRecoveryStorageReady)await window.__billingRecoveryStorageReady;}catch(e){}
   // Crash/accidental-close recovery is based on the durable Billing recovery
@@ -6722,7 +6729,14 @@ async function openBilling(){
   try{initBillingKeyboardShortcuts();requestAnimationFrame(billingKeyboardApplyBadges);}catch(e){}
   refreshBillingPrinterStatus();
 }
-function closeBilling(){saveBillingCart();editingBillingHistoryId=null;const st=document.getElementById("billing-edit-status");if(st)st.textContent="";const ex=document.getElementById("billing-edit-expression");if(ex)ex.value="";document.getElementById("billing-overlay").classList.remove("open");document.getElementById("billing-overlay").setAttribute("aria-hidden","true");}
+function closeBilling(){
+  saveBillingCart();editingBillingHistoryId=null;
+  const st=document.getElementById("billing-edit-status");if(st)st.textContent="";
+  const ex=document.getElementById("billing-edit-expression");if(ex)ex.value="";
+  document.getElementById("billing-overlay").classList.remove("open");
+  document.getElementById("billing-overlay").setAttribute("aria-hidden","true");
+  try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}
+}
 function saveBillingCart(){
   const items=Array.isArray(billingCart)?billingCart:[];
   // Billing cart is the primary durable draft store.
@@ -8811,15 +8825,9 @@ async function printPOSInvoice58mm(saveHistory=true){
 <script id="satrughan-auto-rotate">
 (function(){
   'use strict';
-  // Auto-rotate: never lock the POS app to portrait/landscape.
-  // If the installed browser exposes Screen Orientation API, allow the
-  // device orientation to follow the user's system auto-rotate setting.
+  // Update the layout marker when the device rotates. Do not unlock orientation
+  // here: Billing may have requested landscape while it is open.
   window.satrughanAutoRotate = function(){
-    try{
-      if (screen.orientation && typeof screen.orientation.unlock === 'function') {
-        screen.orientation.unlock();
-      }
-    }catch(e){}
     document.documentElement.classList.toggle('satrughan-landscape',
       window.innerWidth > window.innerHeight);
   };
