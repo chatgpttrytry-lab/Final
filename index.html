@@ -1451,6 +1451,121 @@ body.dark #billing-overlay button {
   document.addEventListener('focusin',function(e){if(e.target&&e.target.closest&&e.target.closest('#billing-overlay,#party-receive-overlay'))setTimeout(fixBillingPaymentKeyboardFields,30);},true);
 })();
 </script>
+
+<style id="calculator-window-mobile-landscape-only">
+/* Calculator Window only: preserve portrait and all existing feature logic. */
+@media (orientation: landscape) and (max-height: 800px) and (pointer: coarse) {
+  body:not(.home-mode) .app-container {
+    width: calc(100vw - 12px); height: calc(100dvh - 12px); max-width: none;
+    display: grid; grid-template-columns: minmax(0, 44%) minmax(0, 56%);
+    grid-template-rows: 44px minmax(0, 1.15fr) minmax(0, 0.65fr) minmax(0, 0.35fr);
+    grid-template-areas: "qr shortcuts" "qr keypad" "config keypad" "display keypad";
+    gap: 4px; padding: 8px; align-items: stretch;
+  }
+  body:not(.home-mode) .app-container > .topbar { display: none !important; }
+  body:not(.home-mode) .app-container > .qr-section { grid-area: qr; min-height: 0; padding: 2px 4px; overflow: hidden; }
+  body:not(.home-mode) .app-container > .qr-section .qr-card { height: 100%; min-height: 0; padding: 4px; gap: 3px; border-radius: 12px; justify-content: center; }
+  body:not(.home-mode) .app-container > .qr-section .qr-box { padding: 3px; border-radius: 7px; }
+  body:not(.home-mode) .app-container > .qr-section .qr-box canvas,
+  body:not(.home-mode) .app-container > .qr-section .qr-box img { width: min(29vh, 100%) !important; height: min(29vh, 100%) !important; max-height: 100%; }
+  body:not(.home-mode) .app-container > .qr-section .amount-display { font-size: clamp(14px, 3.2vh, 22px); }
+  body:not(.home-mode) .app-container > .config-section { grid-area: config; min-height: 0; padding: 2px 4px; gap: 5px; align-content: center; }
+  body:not(.home-mode) .app-container > .config-section .input-group,
+  body:not(.home-mode) .app-container > .config-section .input-group input { height: clamp(32px, 8vh, 42px); min-height: 0; }
+  body:not(.home-mode) .app-container > .config-section .input-group input { font-size: clamp(11px, 2.3vh, 15px); padding-left: 9px; }
+  body:not(.home-mode) .app-container > .config-section .input-group label { font-size: 9px; }
+  body:not(.home-mode) .app-container > .display-container { grid-area: display; min-height: 0; padding: 3px 10px; border-radius: 10px; background: var(--blue2); justify-content: center; overflow: hidden; }
+  body:not(.home-mode) .app-container > .display-container .expression { font-size: clamp(16px, 3.5vh, 24px); max-height: 6vh; min-height: 16px; }
+  body:not(.home-mode) .app-container > .display-container .result-preview { min-height: 8px; font-size: 10px; }
+  body:not(.home-mode) .app-container > .calculator-window-shortcuts { grid-area: shortcuts; min-height: 0; height: 100%; width: 100%; box-sizing: border-box; padding: 0 40px 0 2px; margin: 0; gap: 6px; align-self: stretch; align-items: center; justify-self: stretch; }
+  body:not(.home-mode) .app-container > .calculator-window-shortcuts button { flex: none; min-width: 0; width: 100%; height: 36px; min-height: 34px; max-height: 38px; box-sizing: border-box; align-self: center; padding: 2px 3px; font-size: clamp(9px, 1.6vh, 11px); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body:not(.home-mode) .app-container > .keypad { grid-area: keypad; min-height: 0; height: 100%; padding: 0 2px; gap: clamp(4px, 0.7vw, 8px); grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr)); }
+  body:not(.home-mode) .app-container > .keypad .btn { height: 100%; min-height: 0; min-width: 0; padding: 0 2px; border-radius: 10px; font-size: clamp(17px, 3.8vh, 28px); touch-action: manipulation; }
+  body:not(.home-mode) .app-container > .keypad .btn-op,
+  body:not(.home-mode) .app-container > .keypad .btn-eq { font-size: clamp(20px, 4.2vh, 30px); }
+  body:not(.home-mode) .app-container > .calculator-window-close { top: 3px !important; right: 3px !important; width: 30px !important; height: 30px !important; min-width: 30px !important; font-size: 18px !important; border-radius: 9px !important; }
+}
+</style>
+
+<style id="reference-pos-landscape-ui-v3">
+/* Reference POS landscape UI: isolated to the Billing overlay on touch devices in landscape. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+ #billing-overlay.open{position:fixed!important;inset:0!important;padding:3px!important;overflow:hidden!important;background:#eaf2fb!important;z-index:500!important;}
+ #billing-overlay.open .db-billing-window{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;border-radius:10px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;background:#f5f9ff!important;box-shadow:0 2px 14px #12365b30!important;}
+ #billing-overlay.open .db-billing-header{flex:0 0 52px!important;min-height:52px!important;max-height:52px!important;box-sizing:border-box!important;padding:4px 10px!important;display:flex!important;align-items:center!important;gap:8px!important;background:linear-gradient(100deg,#073778,#064ca4)!important;color:#fff!important;border-radius:8px 8px 0 0!important;}
+ #billing-overlay.open .billing-header-left{flex:1!important;min-width:0!important;display:flex!important;align-items:center!important;gap:8px!important;}
+ #billing-overlay.open .billing-header-main{flex:1!important;min-width:0!important;display:flex!important;align-items:center!important;gap:10px!important;}
+ #billing-overlay.open .billing-header-copy{min-width:0!important;display:flex!important;align-items:center!important;gap:12px!important;}
+ #billing-overlay.open .db-billing-title{font-size:clamp(13px,1.5vw,20px)!important;font-weight:900!important;white-space:nowrap!important;color:#fff!important;}
+ #billing-overlay.open .db-billing-sub{display:none!important}
+ #billing-overlay.open .billing-live-meta{display:flex!important;gap:8px!important;font-size:10px!important;white-space:nowrap!important;color:#e8f2ff!important}
+ #billing-overlay.open .billing-header-shortcuts{display:flex!important;gap:5px!important;align-items:center!important;}
+ #billing-overlay.open .billing-header-shortcut{height:42px!important;min-width:72px!important;padding:4px 8px!important;border-radius:8px!important;font-size:9px!important;font-weight:900!important;box-shadow:0 2px 6px #001b4b66!important}
+ #billing-overlay.open .billing-previous-bill{display:flex!important;flex-direction:column!important;gap:1px!important;padding:4px 7px!important;min-width:72px!important;font-size:9px!important}
+ #billing-overlay.open #billing-printer-status{flex:none!important;padding:7px!important;font-size:10px!important;white-space:nowrap!important}
+ #billing-overlay.open .close-history{width:30px!important;height:30px!important;min-width:30px!important;flex:none!important}
+ #billing-overlay.open .db-billing-body{flex:1!important;min-height:0!important;overflow:hidden!important;box-sizing:border-box!important;padding:7px!important;display:grid!important;grid-template-columns:minmax(0,1.58fr) minmax(300px,1fr)!important;grid-template-rows:minmax(0,1fr)!important;gap:8px!important;align-items:stretch!important;}
+ #billing-overlay.open .billing-customer-payment-layout{display:contents!important}
+ #billing-overlay.open .billing-party-column{grid-column:2!important;grid-row:1!important;align-self:start!important;display:block!important;min-width:0!important;background:#fff!important;border:1px solid #dce6f2!important;border-radius:9px!important;padding:7px!important;box-shadow:0 1px 5px #0c356515!important}
+ #billing-overlay.open .party-selector{padding:2px!important;border:0!important;background:transparent!important}
+ #billing-overlay.open .party-selector-head{margin-bottom:4px!important}
+ #billing-overlay.open .party-selector-row{min-height:34px!important}
+ #billing-overlay.open .billing-party-search-wrap{min-height:34px!important}
+ #billing-overlay.open #billing-party-search{height:34px!important;font-size:12px!important}
+ #billing-overlay.open .billing-barcode-status{font-size:10px!important;padding:5px 2px 0!important}
+ #billing-overlay.open .billing-payment-mode-row{grid-column:2!important;grid-row:1!important;align-self:start!important;margin-top:132px!important;min-width:0!important;padding:7px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;background:#fff!important;border:1px solid #dce6f2!important;border-radius:9px!important;box-shadow:0 1px 5px #0c356515!important;}
+ #billing-overlay.open .billing-payment-mode-label{grid-column:1/-1!important;display:flex!important;align-items:center!important;justify-content:space-between!important;font-size:12px!important;font-weight:900!important;}
+ #billing-overlay.open .billing-mode-group{display:flex!important;min-width:0!important;gap:2px!important}
+ #billing-overlay.open .billing-mode-btn{height:42px!important;flex:1!important;min-width:0!important;border-radius:7px!important;font-size:12px!important;font-weight:900!important}
+ #billing-overlay.open .billing-mode-edit-btn{width:24px!important;min-width:24px!important;padding:0!important}
+ #billing-overlay.open .db-search-row{grid-column:1!important;grid-row:1!important;align-self:start!important;display:flex!important;gap:5px!important;margin:0 0 5px!important;padding:0!important;min-width:0!important}
+ #billing-overlay.open .billing-search-wrap{flex:1!important;min-width:0!important}
+ #billing-overlay.open .db-search{height:38px!important;border-radius:9px!important;background:#fff!important;font-size:13px!important}
+ #billing-overlay.open .billing-camera-btn,#billing-overlay.open .billing-barcode-toggle,#billing-overlay.open .db-small-btn{height:38px!important;min-width:38px!important;padding:0 8px!important;border-radius:8px!important}
+ #billing-overlay.open .billing-search-results{grid-column:1!important;grid-row:1!important;align-self:start!important;margin-top:44px!important;z-index:5!important;max-height:24vh!important;overflow:auto!important}
+ #billing-overlay.open .billing-cart{grid-column:1!important;grid-row:1!important;align-self:stretch!important;margin-top:48px!important;margin-bottom:78px!important;min-height:0!important;overflow:auto!important;border:1px solid #dbe6f2!important;border-radius:9px!important;background:#fff!important;box-shadow:0 1px 5px #0c356515!important}
+ #billing-overlay.open .billing-cart-head{position:sticky!important;top:0!important;z-index:2!important;background:#e6f1fc!important;color:#173a69!important;min-height:34px!important;padding:5px 4px!important}
+ #billing-overlay.open .billing-cart-row{min-height:43px!important;padding:4px!important;border-bottom:1px solid #e8eef5!important}
+ #billing-overlay.open .billing-cart-tools-row{grid-column:1!important;grid-row:1!important;align-self:end!important;margin:0 0 35px!important;padding:4px!important;display:flex!important;flex-wrap:nowrap!important;gap:8px!important;background:#f5f9ff!important;border-radius:8px!important;}
+ #billing-overlay.open .billing-add-position{display:flex!important;align-items:center!important;gap:5px!important;white-space:nowrap!important}
+ #billing-overlay.open .billing-add-position button,#billing-overlay.open .billing-discount-tools button{height:30px!important;padding:3px 8px!important;font-size:10px!important}
+ #billing-overlay.open .billing-discount-tools{display:flex!important;align-items:center!important;gap:4px!important;min-width:0!important;font-size:10px!important}
+ #billing-overlay.open #billing-discount-percent{width:40px!important;height:28px!important}
+ #billing-overlay.open .billing-info-bar{grid-column:1!important;grid-row:1!important;align-self:end!important;margin:0!important;padding:3px 8px!important;height:27px!important;box-sizing:border-box!important;display:flex!important;justify-content:flex-end!important;gap:12px!important;font-size:10px!important;background:#fff!important;border-radius:6px!important}
+ #billing-overlay.open #billing-edit-status,#billing-overlay.open .db-billing-body>div[style*="Original calculation"],#billing-overlay.open #billing-edit-expression,#billing-overlay.open .billing-payment-box{display:none!important}
+ #billing-overlay.open .billing-totals{grid-column:2!important;grid-row:1!important;align-self:start!important;margin-top:310px!important;padding:9px!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;border:1px solid #dce6f2!important;border-radius:9px!important;background:#edf6ff!important;}
+ #billing-overlay.open .billing-total-row,#billing-overlay.open .billing-profit-row{display:flex!important;flex-direction:column!important;gap:5px!important;min-width:0!important;padding:4px!important;border:0!important;text-align:center!important}
+ #billing-overlay.open .billing-total-row span,#billing-overlay.open .billing-profit-row span{font-size:9px!important;white-space:normal!important}
+ #billing-overlay.open .billing-total-row b,#billing-overlay.open .billing-profit-row b{font-size:clamp(13px,1.6vw,22px)!important;white-space:nowrap!important}
+ #billing-overlay.open .billing-grand-total-main{display:none!important}
+ #billing-overlay.open .billing-grand-loyalty{display:block!important;width:100%!important}
+ #billing-overlay.open .billing-grand-loyalty-head{display:flex!important;justify-content:space-between!important;align-items:center!important}
+ #billing-overlay.open .billing-grand-loyalty-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important}
+ #billing-overlay.open .billing-grand-loyalty-grid>div{padding:5px 2px!important;min-width:0!important}
+ #billing-overlay.open .billing-actions{grid-column:2!important;grid-row:1!important;align-self:end!important;margin:0 0 43px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+ #billing-overlay.open .billing-actions button{height:42px!important;min-height:38px!important;padding:4px!important;border-radius:8px!important;font-size:11px!important;font-weight:900!important;white-space:nowrap!important}
+ #billing-overlay.open .billing-secondary-actions{grid-column:2!important;grid-row:1!important;align-self:end!important;margin:0!important;transform:translateY(0)!important;display:flex!important;gap:6px!important}
+ #billing-overlay.open .billing-secondary-actions button{height:34px!important;flex:1!important;min-width:0!important;padding:3px!important;font-size:10px!important}
+}
+</style>
+
+<style id="billing-party-loyalty-compact-height">
+@media (orientation:landscape) and (min-width:700px){
+ #billing-overlay.open .billing-party-column{padding:4px!important}
+ #billing-overlay.open .party-selector{padding:0!important}
+ #billing-overlay.open .party-selector-head{margin-bottom:2px!important}
+ #billing-overlay.open .party-selector-row{min-height:29px!important;margin-top:3px!important}
+ #billing-overlay.open .billing-party-search-wrap{min-height:29px!important}
+ #billing-overlay.open #billing-party-search{height:29px!important;padding-top:0!important;padding-bottom:0!important}
+ #billing-overlay.open .party-selector-due{margin-top:2px!important;line-height:1.1!important}
+ #billing-overlay.open .billing-barcode-status{padding-top:2px!important;line-height:1.1!important}
+ #billing-overlay.open .billing-grand-loyalty{padding-top:2px!important;padding-bottom:2px!important}
+ #billing-overlay.open .billing-grand-loyalty-head{margin-bottom:2px!important}
+ #billing-overlay.open .billing-grand-loyalty-grid{gap:3px!important}
+ #billing-overlay.open .billing-grand-loyalty-grid>div{padding:2px 1px!important}
+ #billing-overlay.open .billing-grand-loyalty-values{margin-top:1px!important;gap:2px!important}
+}
+</style>
 </head>
 <body class="home-mode">
 <!-- COUPON VOUCHER MOVED TO HOME SCREEN AS TOP-LEVEL WINDOW; EXISTING DESIGN/PRINT LOGIC REUSED -->
@@ -13414,6 +13529,45 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 
+
+
+<style id="billing-landscape-item-table-scroll-fill-fix">
+/* POS Billing landscape only: let the item rows use the entire available table area.
+   Remove the old fixed body-height cap that caused a short scroll region with blank space below.
+   No billing logic, columns, buttons, or non-landscape screens are changed. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open .billing-cart{
+    display:flex!important;
+    flex-direction:column!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  #billing-overlay.open .billing-cart-head{
+    flex:0 0 auto!important;
+    position:sticky!important;
+    top:0!important;
+    z-index:3!important;
+  }
+  #billing-overlay.open #billing-cart-body{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    scrollbar-gutter:auto!important;
+  }
+  #billing-overlay.open #billing-cart-body:empty{
+    flex:0 0 42px!important;
+    min-height:42px!important;
+    height:42px!important;
+  }
+}
+</style>
+
 </html>
 <style id="billing-qty-touch-target-adjustment">
 /* Only enlarge QTY +/- touch targets and rebalance the item row. */
@@ -13554,5 +13708,481 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       }
     }catch(e){}
   });
+})();
+</script>
+
+
+<style id="pos-landscape-loyalty-customer-row-fix">
+/* Only in POS Billing landscape: keep the customer search and Loyalty bar on the same row.
+   All portrait layouts, other screens, and billing logic remain unchanged. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open #billing-party-selector-wrap.party-selector{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.35fr) minmax(120px,1fr)!important;
+    column-gap:7px!important;
+    row-gap:3px!important;
+    align-items:center!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap .party-selector-head{
+    grid-column:1/-1!important;
+    grid-row:1!important;
+    min-width:0!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap .party-selector-row{
+    grid-column:1!important;
+    grid-row:2!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-party-due{
+    grid-column:1/-1!important;
+    grid-row:3!important;
+    margin-top:2px!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-loyalty-box.show{
+    display:block!important;
+    grid-column:2!important;
+    grid-row:2!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:3px 5px!important;
+    box-sizing:border-box!important;
+    border-radius:7px!important;
+    max-height:34px!important;
+    overflow:hidden!important;
+    align-self:center!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-loyalty-box.show .billing-loyalty-main{
+    display:flex!important;align-items:center!important;justify-content:space-between!important;gap:4px!important;min-height:22px!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-loyalty-box.show #billing-loyalty-points{
+    display:block!important;font-size:clamp(8px,1.1vw,11px)!important;line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-loyalty-box.show .billing-loyalty-sub{display:none!important}
+  #billing-overlay.open #billing-party-selector-wrap #billing-loyalty-box.show .billing-loyalty-redeem{
+    flex:none!important;height:21px!important;min-height:21px!important;padding:0 5px!important;font-size:8px!important;white-space:nowrap!important;
+  }
+}
+</style>
+
+<style id="pos-landscape-loyalty-customer-row-fix-final">
+/* Final override: landscape POS Billing only. Customer search and Loyalty share row 2. */
+@media (orientation:landscape){
+  #billing-overlay #billing-party-selector-wrap.party-selector{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.15fr) minmax(0,0.85fr)!important;
+    column-gap:8px!important;
+    row-gap:4px!important;
+    align-items:center!important;
+  }
+  #billing-overlay #billing-party-selector-wrap .party-selector-head{
+    grid-column:1 / -1!important;grid-row:1!important;min-width:0!important;
+  }
+  #billing-overlay #billing-party-selector-wrap .party-selector-row{
+    grid-column:1!important;grid-row:2!important;min-width:0!important;width:100%!important;
+    margin:0!important;display:block!important;
+  }
+  #billing-overlay #billing-party-selector-wrap .billing-party-search-wrap{width:100%!important;min-width:0!important}
+  #billing-overlay #billing-party-selector-wrap .billing-party-search-wrap>input{
+    width:100%!important;min-width:0!important;box-sizing:border-box!important;
+  }
+  #billing-overlay #billing-party-selector-wrap #billing-loyalty-box.show{
+    display:block!important;grid-column:2!important;grid-row:2!important;
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    box-sizing:border-box!important;margin:0!important;padding:4px 6px!important;
+    max-height:none!important;overflow:visible!important;align-self:center!important;
+  }
+  #billing-overlay #billing-party-selector-wrap #billing-loyalty-box.show .billing-loyalty-main{
+    display:flex!important;align-items:center!important;justify-content:space-between!important;
+    gap:4px!important;min-width:0!important;
+  }
+  #billing-overlay #billing-party-selector-wrap #billing-loyalty-box.show #billing-loyalty-points{
+    display:block!important;min-width:0!important;font-size:clamp(9px,1.2vw,12px)!important;
+    line-height:1.2!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+  }
+  #billing-overlay #billing-party-selector-wrap #billing-loyalty-box.show .billing-loyalty-sub{display:none!important}
+  #billing-overlay #billing-party-selector-wrap #billing-loyalty-box.show .billing-loyalty-redeem{
+    flex:none!important;height:24px!important;min-height:24px!important;padding:0 7px!important;
+    font-size:9px!important;white-space:nowrap!important;
+  }
+  #billing-overlay #billing-party-selector-wrap #billing-party-due{
+    grid-column:1 / -1!important;grid-row:3!important;margin-top:2px!important;
+  }
+}
+</style>
+
+<style id="billing-landscape-requested-layout-only">
+/* Requested Billing-only landscape layout adjustment. Portrait and other studios are untouched. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  /* Keep Loyalty Points inside the customer/party card, alongside customer search. */
+  #billing-overlay.open #billing-party-selector-wrap.party-selector{
+    grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)!important;
+    column-gap:6px!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-loyalty-box.show{
+    grid-column:2!important;grid-row:2!important;max-height:38px!important;
+    overflow:hidden!important;padding:3px 4px!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-loyalty-box.show .billing-loyalty-sub{display:none!important}
+
+  /* Item count / quantity / P-L sits beside the Add Item / Bottom / Top controls. */
+  #billing-overlay.open .billing-cart{margin-bottom:112px!important}
+  #billing-overlay.open .billing-cart-tools-row{
+    margin:0 0 74px!important;align-items:center!important;gap:6px!important;
+  }
+  #billing-overlay.open .billing-cart-tools-row .billing-add-position{flex:0 0 auto!important}
+  #billing-overlay.open .billing-cart-tools-row .billing-discount-tools{flex:1 1 auto!important;justify-content:flex-end!important;gap:3px!important}
+  #billing-overlay.open .billing-info-bar{
+    align-self:end!important;margin:0 0 45px!important;height:25px!important;
+    justify-content:space-between!important;gap:8px!important;padding:3px 7px!important;
+  }
+
+  /* Summary + payment total below the add-item toolbar, in the left column. */
+  #billing-overlay.open .billing-totals{
+    grid-column:1!important;grid-row:1!important;align-self:end!important;
+    margin:0 0 0!important;padding:5px 7px!important;display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:2px!important;
+    max-height:78px!important;overflow:hidden!important;box-sizing:border-box!important;
+  }
+  #billing-overlay.open .billing-total-row,
+  #billing-overlay.open .billing-profit-row{
+    display:flex!important;flex-direction:row!important;align-items:center!important;
+    justify-content:space-between!important;gap:3px!important;padding:2px 3px!important;
+    text-align:left!important;min-width:0!important;
+  }
+  #billing-overlay.open .billing-total-row span,
+  #billing-overlay.open .billing-profit-row span{font-size:8px!important;white-space:normal!important;line-height:1.05!important}
+  #billing-overlay.open .billing-total-row b,
+  #billing-overlay.open .billing-profit-row b{font-size:10px!important;white-space:nowrap!important}
+  #billing-overlay.open .billing-grand-loyalty-row{grid-column:1/-1!important;display:block!important;padding:2px 4px!important;margin:0!important}
+  #billing-overlay.open .billing-grand-total-main{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:6px!important}
+  #billing-overlay.open .billing-grand-total-main>span{font-size:10px!important;font-weight:900!important;color:var(--blue)!important}
+  #billing-overlay.open .billing-grand-total-main>b{font-size:17px!important;line-height:1!important;color:var(--blue)!important}
+  #billing-overlay.open .billing-grand-loyalty{display:none!important}
+
+  /* The old calculation caption/input is not shown in landscape Billing only. */
+  #billing-overlay.open .db-billing-body>div[style*="Original calculation"],
+  #billing-overlay.open #billing-edit-expression,
+  #billing-overlay.open #billing-edit-status{display:none!important}
+}
+</style>
+
+<style id="billing-landscape-step1-loyalty-inside-customer">
+/* Step 1 only: show the full Loyalty Points panel inside Customer / Party in landscape Billing. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty{
+    display:block!important;grid-column:2!important;grid-row:2!important;
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    margin:0!important;padding:3px 4px!important;box-sizing:border-box!important;
+    overflow:hidden!important;border-radius:8px!important;align-self:stretch!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-head{
+    display:flex!important;align-items:center!important;justify-content:space-between!important;
+    gap:3px!important;margin:0 0 3px!important;font-size:10px!important;line-height:1.1!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-redeem{
+    min-height:20px!important;height:20px!important;padding:0 5px!important;font-size:9px!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-grid,
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-values{
+    display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:2px!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-grid>div{
+    min-width:0!important;padding:2px!important;text-align:center!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-grid small,
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-grid b{
+    display:block!important;font-size:8px!important;line-height:1.1!important;white-space:nowrap!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap #billing-grand-loyalty .billing-grand-loyalty-values span{
+    min-width:0!important;font-size:7px!important;line-height:1.1!important;text-align:center!important;white-space:nowrap!important;
+  }
+}
+</style>
+<script id="billing-landscape-step1-loyalty-move">
+(function(){
+  const panelId='billing-grand-loyalty';
+  function placeBillingLoyaltyPanel(){
+    const panel=document.getElementById(panelId);
+    const party=document.getElementById('billing-party-selector-wrap');
+    const totalRow=document.querySelector('#billing-overlay .billing-grand-loyalty-row');
+    if(!panel||!party||!totalRow)return;
+    const landscape=window.matchMedia('(orientation: landscape) and (max-height: 800px) and (pointer: coarse)').matches;
+    if(landscape){
+      if(panel.parentElement!==party) party.appendChild(panel);
+    }else if(panel.parentElement!==totalRow){
+      totalRow.appendChild(panel);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',placeBillingLoyaltyPanel,{once:true});
+  else placeBillingLoyaltyPanel();
+  window.addEventListener('resize',placeBillingLoyaltyPanel,{passive:true});
+  window.addEventListener('orientationchange',placeBillingLoyaltyPanel,{passive:true});
+})();
+</script>
+
+<style id="billing-landscape-party-new-inline-only">
+/* Only requested change: keep + NEW beside CUSTOMER / PARTY and remove excess header spacing. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open #billing-party-selector-wrap .party-selector-head{
+    justify-content:flex-start!important;
+    align-items:center!important;
+    gap:8px!important;
+    margin-bottom:3px!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap .party-selector-head label{
+    flex:0 0 auto!important;
+    width:auto!important;
+  }
+  #billing-overlay.open #billing-party-selector-wrap .party-selector-head .party-selector-new{
+    flex:0 0 auto!important;
+    width:auto!important;
+    height:28px!important;
+    min-height:28px!important;
+    margin:0!important;
+    padding:0 8px!important;
+  }
+}
+</style>
+
+<style id="billing-landscape-dark-mode-visibility-fix">
+/* Dark-mode readability fix: POS Billing landscape only. No layout or billing logic changes. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  body.dark #billing-overlay.open{
+    background:#090e16!important;
+    color:#edf2fa!important;
+  }
+  body.dark #billing-overlay.open .db-billing-window{
+    background:#101722!important;
+    color:#edf2fa!important;
+    border:1px solid #2a374a!important;
+  }
+  body.dark #billing-overlay.open .billing-party-column,
+  body.dark #billing-overlay.open .billing-payment-mode-row,
+  body.dark #billing-overlay.open .billing-cart,
+  body.dark #billing-overlay.open .billing-info-bar,
+  body.dark #billing-overlay.open .billing-totals,
+  body.dark #billing-overlay.open .billing-cart-tools-row,
+  body.dark #billing-overlay.open .billing-grand-loyalty,
+  body.dark #billing-overlay.open .party-selector,
+  body.dark #billing-overlay.open .billing-payment-box{
+    background:#171f2c!important;
+    color:#edf2fa!important;
+    border-color:#344256!important;
+    box-shadow:0 2px 8px rgba(0,0,0,.32)!important;
+  }
+  body.dark #billing-overlay.open .billing-cart-head{
+    background:#24364d!important;
+    color:#f3f7ff!important;
+    border-color:#344256!important;
+  }
+  body.dark #billing-overlay.open .billing-cart-row,
+  body.dark #billing-overlay.open .billing-total-row,
+  body.dark #billing-overlay.open .billing-profit-row,
+  body.dark #billing-overlay.open .billing-payment-mode-label,
+  body.dark #billing-overlay.open .party-selector-head,
+  body.dark #billing-overlay.open .billing-grand-loyalty-head,
+  body.dark #billing-overlay.open .billing-grand-loyalty-grid,
+  body.dark #billing-overlay.open .billing-info-bar,
+  body.dark #billing-overlay.open .billing-cart-tools-row,
+  body.dark #billing-overlay.open .billing-party-column label{
+    color:#edf2fa!important;
+  }
+  body.dark #billing-overlay.open .billing-cart-row{border-bottom-color:#2c394b!important;}
+  body.dark #billing-overlay.open input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  body.dark #billing-overlay.open select,
+  body.dark #billing-overlay.open textarea,
+  body.dark #billing-overlay.open .db-search,
+  body.dark #billing-overlay.open #billing-party-search,
+  body.dark #billing-overlay.open #billing-discount-percent{
+    background:#0d141f!important;
+    color:#f3f6fc!important;
+    border-color:#3a4a60!important;
+    -webkit-text-fill-color:#f3f6fc!important;
+    caret-color:#ffffff!important;
+  }
+  body.dark #billing-overlay.open input::placeholder,
+  body.dark #billing-overlay.open textarea::placeholder,
+  body.dark #billing-overlay.open .db-search::placeholder,
+  body.dark #billing-overlay.open #billing-party-search::placeholder{
+    color:#9aa9bd!important;
+    opacity:1!important;
+  }
+  body.dark #billing-overlay.open .billing-cart-row .cart-name,
+  body.dark #billing-overlay.open .billing-cart-row b,
+  body.dark #billing-overlay.open .billing-total-row b,
+  body.dark #billing-overlay.open .billing-profit-row b,
+  body.dark #billing-overlay.open .billing-grand-loyalty b,
+  body.dark #billing-overlay.open .billing-grand-loyalty strong{
+    color:#f3f6fc!important;
+  }
+  body.dark #billing-overlay.open .billing-live-meta{color:#e5edf8!important;}
+  body.dark #billing-overlay.open .billing-search-results{
+    background:#151e2b!important;color:#edf2fa!important;border-color:#344256!important;
+  }
+  body.dark #billing-overlay.open .billing-search-results *{border-color:#344256!important;}
+}
+</style>
+
+
+<style id="billing-landscape-action-buttons-equal-height-only">
+/* UI-only: enlarge the seven Billing action buttons equally in landscape to use the blank area below Payment Mode. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open .billing-actions{
+    row-gap:6px!important;
+  }
+  #billing-overlay.open .billing-actions button{
+    height:58px!important;
+    min-height:58px!important;
+    max-height:58px!important;
+    box-sizing:border-box!important;
+  }
+}
+</style>
+
+<style id="billing-landscape-counts-in-toolbar-ui-only">
+/* UI-only: show the existing live item/quantity counters in the free gap between
+   BOTTOM/TOP and Selected MRP Discount. No billing logic or other controls changed. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open .billing-cart-tools-row>.billing-info-bar{
+    display:flex!important;flex:1 1 110px!important;min-width:104px!important;
+    height:30px!important;min-height:30px!important;max-height:30px!important;
+    margin:0!important;padding:2px 6px!important;box-sizing:border-box!important;
+    align-items:center!important;justify-content:center!important;align-self:center!important;
+    gap:7px!important;flex-wrap:nowrap!important;overflow:hidden!important;
+    border:1px solid rgba(100,116,139,.35)!important;border-radius:6px!important;
+    font-size:11px!important;line-height:1.2!important;font-weight:800!important;
+    white-space:nowrap!important;background:rgba(255,255,255,.96)!important;
+  }
+  #billing-overlay.open .billing-cart-tools-row>.billing-info-bar #billing-item-count,
+  #billing-overlay.open .billing-cart-tools-row>.billing-info-bar #billing-qty-count{
+    display:inline-flex!important;align-items:center!important;justify-content:center!important;
+    min-width:0!important;font-size:11px!important;font-weight:900!important;line-height:1.2!important;white-space:nowrap!important;
+  }
+  #billing-overlay.open .billing-cart-tools-row>.billing-info-bar #billing-profit-mini{display:none!important}
+  #billing-overlay.open .billing-cart-tools-row .billing-discount-tools{flex:0 1 auto!important;min-width:0!important}
+}
+</style>
+<script id="billing-landscape-counts-in-toolbar-ui-only-script">
+(function(){
+  function placeBillingCounts(){
+    const overlay=document.getElementById('billing-overlay');
+    const tools=overlay&&overlay.querySelector('.billing-cart-tools-row');
+    const info=overlay&&overlay.querySelector('.billing-info-bar');
+    const discount=tools&&tools.querySelector('.billing-discount-tools');
+    if(!tools||!info||!discount)return;
+    const landscape=window.matchMedia('(orientation: landscape) and (max-height: 800px) and (pointer: coarse)').matches;
+    if(landscape){ if(info.parentElement!==tools) tools.insertBefore(info,discount); }
+    else if(info.parentElement===tools){ tools.insertAdjacentElement('afterend',info); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',placeBillingCounts,{once:true}); else placeBillingCounts();
+  window.addEventListener('resize',placeBillingCounts,{passive:true});
+  window.addEventListener('orientationchange',placeBillingCounts,{passive:true});
+  document.addEventListener('click',function(e){if(e.target.closest('#billing-overlay'))setTimeout(placeBillingCounts,0);},true);
+})();
+</script>
+
+
+<style id="billing-landscape-thin-gap-no-overlap-fix">
+/* Landscape Billing only: shorten the item-table area and keep slim clear gaps
+   between the table, Add Item toolbar, and billing calculation/totals bar.
+   No portrait styles, controls, calculations, or billing logic are changed. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open .billing-cart{
+    margin-bottom:126px!important;
+  }
+  #billing-overlay.open .billing-cart-tools-row{
+    margin-bottom:82px!important;
+  }
+  #billing-overlay.open .billing-totals{
+    margin-bottom:0!important;
+  }
+}
+</style>
+
+
+<style id="billing-landscape-customer-payment-thin-gap">
+/* Landscape Billing only: leave a slim clear gap between Customer / Party and Payment Mode. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  #billing-overlay.open .billing-payment-mode-row{
+    margin-top:136px!important;
+  }
+}
+</style>
+
+<style id="billing-landscape-total-split-box-ui-only">
+/* Keep the existing totals bar footprint/position/height/width. Split payable total
+   to one side and group every other calculation into one shared colour panel. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+ #billing-overlay.open .billing-totals{
+   display:grid!important;grid-template-columns:minmax(150px,.78fr) minmax(0,2.4fr)!important;
+   grid-template-rows:minmax(0,1fr)!important;align-items:stretch!important;gap:8px!important;
+   box-sizing:border-box!important;overflow:hidden!important;
+ }
+ #billing-overlay.open .billing-totals>.billing-grand-loyalty-row{
+   grid-column:1!important;grid-row:1!important;display:flex!important;flex-direction:column!important;
+   justify-content:center!important;min-width:0!important;min-height:0!important;height:100%!important;
+   margin:0!important;padding:8px 10px!important;border:1px solid #2c8bff!important;
+   border-radius:9px!important;background:#123f75!important;color:#fff!important;box-sizing:border-box!important;
+ }
+ #billing-overlay.open .billing-totals .billing-grand-total-main{
+   display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+   justify-content:center!important;gap:7px!important;min-width:0!important;
+ }
+ #billing-overlay.open .billing-totals .billing-grand-total-main>span{
+   display:block!important;font-size:clamp(10px,1.1vw,13px)!important;line-height:1.15!important;
+   font-weight:950!important;color:#fff!important;white-space:normal!important;
+ }
+ #billing-overlay.open .billing-totals .billing-grand-total-main>b{
+   display:block!important;font-size:clamp(22px,2.5vw,32px)!important;line-height:1!important;
+   font-weight:1000!important;color:#fff!important;white-space:nowrap!important;
+ }
+ #billing-overlay.open .billing-totals .billing-grand-loyalty{display:none!important}
+ #billing-overlay.open .billing-totals .billing-other-calculations{
+   grid-column:2!important;grid-row:1!important;display:grid!important;
+   grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;
+   align-content:stretch!important;align-items:center!important;gap:4px 10px!important;
+   min-width:0!important;min-height:0!important;height:100%!important;padding:6px 9px!important;
+   border:1px solid #334b68!important;border-radius:9px!important;background:#24364b!important;
+   box-sizing:border-box!important;overflow:hidden!important;
+ }
+ #billing-overlay.open .billing-totals .billing-other-calculations>.billing-total-row,
+ #billing-overlay.open .billing-totals .billing-other-calculations>.billing-profit-row{
+   display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+   justify-content:center!important;gap:3px!important;min-width:0!important;padding:2px 4px!important;
+   margin:0!important;border:0!important;text-align:left!important;background:transparent!important;
+ }
+ #billing-overlay.open .billing-totals .billing-other-calculations span{
+   font-size:clamp(8px,.85vw,10px)!important;line-height:1.1!important;font-weight:850!important;
+   color:#dbe7f5!important;white-space:normal!important;overflow-wrap:anywhere!important;
+ }
+ #billing-overlay.open .billing-totals .billing-other-calculations b{
+   font-size:clamp(11px,1.15vw,15px)!important;line-height:1.1!important;font-weight:950!important;
+   color:#fff!important;white-space:nowrap!important;
+ }
+}
+</style>
+<script id="billing-landscape-total-split-box-ui-only-script">
+(function(){
+ function arrangeBillingTotalBoxes(){
+  const overlay=document.getElementById('billing-overlay');
+  const totals=overlay&&overlay.querySelector('.billing-totals');
+  if(!totals)return;
+  const grand=totals.querySelector(':scope > .billing-grand-loyalty-row');
+  if(!grand)return;
+  let box=totals.querySelector(':scope > .billing-other-calculations');
+  if(!box){
+   box=document.createElement('div');box.className='billing-other-calculations';
+   box.setAttribute('aria-label','Other bill calculations');
+   totals.insertBefore(box,grand);
+   Array.from(totals.children).forEach(el=>{if(el!==grand&&el!==box)box.appendChild(el)});
+  }
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',arrangeBillingTotalBoxes,{once:true});else arrangeBillingTotalBoxes();
+ window.addEventListener('resize',arrangeBillingTotalBoxes,{passive:true});
+ window.addEventListener('orientationchange',arrangeBillingTotalBoxes,{passive:true});
+ document.addEventListener('click',function(e){if(e.target.closest('#billing-overlay'))setTimeout(arrangeBillingTotalBoxes,0)},true);
 })();
 </script>
