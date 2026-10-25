@@ -6748,19 +6748,26 @@ function closeBilling(){
   document.getElementById("billing-overlay").classList.remove("open");
   document.getElementById("billing-overlay").setAttribute("aria-hidden","true");
   // Keep the Home screen in the mode selected by the Landscape toggle.
-  // Closing POS Billing must not unlock orientation when Landscape is ON.
-  try{
-    const landscapeOn = typeof window.saLandscapeModeEnabled === 'function'
-      ? window.saLandscapeModeEnabled()
-      : localStorage.getItem('sa-landscape-mode') === '1';
-    if(screen.orientation && typeof screen.orientation.lock === 'function'){
-      screen.orientation.lock(landscapeOn ? 'landscape' : 'portrait').catch(function(){
-        if(!landscapeOn && typeof screen.orientation.unlock === 'function') screen.orientation.unlock();
-      });
-    }else if(!landscapeOn && screen.orientation && typeof screen.orientation.unlock === 'function'){
-      screen.orientation.unlock();
-    }
-  }catch(e){}
+  // Re-apply after Billing closes because some mobile browsers reset orientation
+  // during overlay/navigation transitions.
+  function applySavedHomeOrientation(){
+    try{
+      const landscapeOn = typeof window.saLandscapeModeEnabled === 'function'
+        ? window.saLandscapeModeEnabled()
+        : localStorage.getItem('sa-landscape-mode') === '1';
+      if(screen.orientation && typeof screen.orientation.lock === 'function'){
+        screen.orientation.lock(landscapeOn ? 'landscape' : 'portrait').catch(function(){
+          // Never unlock orientation when Landscape is ON.
+          if(!landscapeOn && typeof screen.orientation.unlock === 'function') screen.orientation.unlock();
+        });
+      }else if(!landscapeOn && screen.orientation && typeof screen.orientation.unlock === 'function'){
+        screen.orientation.unlock();
+      }
+    }catch(e){}
+  }
+  applySavedHomeOrientation();
+  setTimeout(applySavedHomeOrientation, 120);
+  setTimeout(applySavedHomeOrientation, 500);
 }
 function saveBillingCart(){
   const items=Array.isArray(billingCart)?billingCart:[];
@@ -10779,6 +10786,20 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
   function goHome(){
     if(typeof window.saGoHome==='function') window.saGoHome();
     else { document.body.classList.remove('modal-front-open'); document.body.classList.add('home-mode'); window.scrollTo(0,0); }
+    // Preserve the selected orientation after close handlers finish navigation.
+    function reapplySavedOrientation(){
+      try{
+        const on = typeof window.saLandscapeModeEnabled === 'function'
+          ? window.saLandscapeModeEnabled()
+          : localStorage.getItem('sa-landscape-mode') === '1';
+        if(screen.orientation && typeof screen.orientation.lock === 'function'){
+          screen.orientation.lock(on ? 'landscape' : 'portrait').catch(function(){});
+        }
+      }catch(e){}
+    }
+    reapplySavedOrientation();
+    setTimeout(reapplySavedOrientation, 120);
+    setTimeout(reapplySavedOrientation, 500);
   }
 
   // Calculator Close -> Home. Event delegation also covers the button reliably on mobile.
