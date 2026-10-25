@@ -6747,7 +6747,20 @@ function closeBilling(){
   const ex=document.getElementById("billing-edit-expression");if(ex)ex.value="";
   document.getElementById("billing-overlay").classList.remove("open");
   document.getElementById("billing-overlay").setAttribute("aria-hidden","true");
-  try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}
+  // Keep the Home screen in the mode selected by the Landscape toggle.
+  // Closing POS Billing must not unlock orientation when Landscape is ON.
+  try{
+    const landscapeOn = typeof window.saLandscapeModeEnabled === 'function'
+      ? window.saLandscapeModeEnabled()
+      : localStorage.getItem('sa-landscape-mode') === '1';
+    if(screen.orientation && typeof screen.orientation.lock === 'function'){
+      screen.orientation.lock(landscapeOn ? 'landscape' : 'portrait').catch(function(){
+        if(!landscapeOn && typeof screen.orientation.unlock === 'function') screen.orientation.unlock();
+      });
+    }else if(!landscapeOn && screen.orientation && typeof screen.orientation.unlock === 'function'){
+      screen.orientation.unlock();
+    }
+  }catch(e){}
 }
 function saveBillingCart(){
   const items=Array.isArray(billingCart)?billingCart:[];
