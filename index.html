@@ -738,6 +738,12 @@ body.dark{
 body.home-mode #sa-home{display:flex}
 body.home-mode .app-container{display:none!important}
 body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
+
+.sa-home-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+#landscape-mode-btn{height:42px;padding:0 12px;flex:0 0 auto;border:1px solid rgba(255,255,255,.24);border-radius:13px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:900;white-space:nowrap;cursor:pointer;touch-action:manipulation}
+#landscape-mode-btn:active{transform:scale(.97)}
+@media(max-width:380px){#landscape-mode-btn{height:38px;padding:0 8px;font-size:11px}.sa-home-head-actions{gap:5px}#theme-btn{width:38px;height:38px;flex-basis:38px}}
+
 .sa-home-head{
   flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:14px 18px 13px;background:linear-gradient(135deg,#101a31,#1c2a49 62%,#27385e);
@@ -1809,7 +1815,10 @@ div>
       <div class="sa-brand-mark">▦</div>
       <div style="min-width:0"><div class="sa-brand-title">SATRUGHAN ANNAPURNA POS</div><div class="sa-brand-sub">Billing • Inventory • Barcode • Printing</div></div>
     </div>
-    <button id="theme-btn" onclick="toggleTheme()" aria-label="Toggle day/night theme" title="Day / Night">☀️</button>
+    <div class="sa-home-head-actions">
+      <button id="landscape-mode-btn" onclick="enableLandscapeMode()" aria-label="Enable landscape mode" title="Use app in landscape mode">↻ Landscape</button>
+      <button id="theme-btn" onclick="toggleTheme()" aria-label="Toggle day/night theme" title="Day / Night">☀️</button>
+    </div>
   </header>
   <main class="sa-home-scroll">
     <section class="sa-welcome">
@@ -6597,7 +6606,10 @@ async function openBilling(){
   // Ask supported mobile browsers to open Billing in landscape. This must be
   // attempted directly from the user's tap; browsers may reject it in a normal tab.
   try{
-    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+    // Respect the Home Screen Landscape ON/OFF switch; OFF means Billing will
+    // not automatically request landscape orientation.
+    if ((!window.saLandscapeModeEnabled || window.saLandscapeModeEnabled()) &&
+        screen.orientation && typeof screen.orientation.lock === 'function') {
       screen.orientation.lock('landscape').catch(function(){});
     }
   }catch(e){}
@@ -10636,6 +10648,51 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
 .billing-camera-card:fullscreen .billing-camera-resize-handle{display:none}
 @media(max-width:520px){.billing-camera-card{left:var(--billing-cam-left,8px);top:var(--billing-cam-top,66px);width:var(--billing-cam-width,min(330px,calc(100vw - 16px)));max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);min-width:250px;min-height:220px}.billing-camera-resize-handle{width:32px;height:32px}.billing-camera-resize-handle:before{font-size:20px}}
 </style>
+
+<script id="sa-landscape-mode-button">
+// Home-screen Landscape ON/OFF toggle. Orientation locking is supported only
+// by some browsers/PWAs and must be requested from a user gesture.
+(function(){
+  const KEY='sa-landscape-mode';
+  function isOn(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
+  function paintButton(){
+    const btn=document.getElementById('landscape-mode-btn'); if(!btn)return;
+    const on=isOn();
+    btn.textContent=on?'✓ Landscape ON':'↻ Landscape OFF';
+    btn.setAttribute('aria-label',on?'Turn landscape mode off':'Turn landscape mode on');
+    btn.title=on?'Tap to turn landscape mode off':'Tap to turn landscape mode on';
+  }
+  window.saLandscapeModeEnabled=isOn;
+  window.updateLandscapeModeButton=paintButton;
+  window.enableLandscapeMode=async function(){
+    const btn=document.getElementById('landscape-mode-btn');
+    if(isOn()){
+      try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}
+      try{localStorage.setItem(KEY,'0');}catch(e){}
+      paintButton();
+      return;
+    }
+    try{
+      if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+        try{await document.documentElement.requestFullscreen();}catch(e){}
+      }
+      if(screen.orientation && typeof screen.orientation.lock==='function'){
+        await screen.orientation.lock('landscape');
+        try{localStorage.setItem(KEY,'1');}catch(e){}
+        paintButton();
+        return;
+      }
+      if(btn)btn.textContent='Rotate device ↻';
+    }catch(e){
+      if(btn)btn.textContent='Landscape unavailable';
+      setTimeout(paintButton,2200);
+    }
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintButton,{once:true});
+  else paintButton();
+})();
+</script>
+
 <script id="sa-home-navigation">
 (function(){
   document.body.classList.add('home-mode');
