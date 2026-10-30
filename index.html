@@ -8823,21 +8823,46 @@ async function printPOSInvoice58mm(saveHistory=true){
 <script id="satrughan-auto-rotate">
 (function(){
   'use strict';
-  // Let the phone's system Auto Rotate setting control the app orientation.
-  // Release any orientation lock left by an earlier version of the app.
-  try{
-    if(screen.orientation && typeof screen.orientation.unlock === 'function'){
-      screen.orientation.unlock();
-    }
-  }catch(e){}
+
+  // Keep orientation controlled by Android's Auto-rotate setting.
+  // Re-apply the unlock when the page is restored or becomes active.
+  function releaseOrientationLock(){
+    try{
+      if(screen.orientation && typeof screen.orientation.unlock === 'function'){
+        screen.orientation.unlock();
+      }
+    }catch(e){}
+  }
+
+  function updateOrientationLayout(){
+    var landscape = window.matchMedia
+      ? window.matchMedia('(orientation: landscape)').matches
+      : window.innerWidth > window.innerHeight;
+    document.documentElement.classList.toggle('satrughan-landscape', landscape);
+  }
+
   window.satrughanAutoRotate = function(){
-    document.documentElement.classList.toggle('satrughan-landscape',
-      window.innerWidth > window.innerHeight);
+    releaseOrientationLock();
+    updateOrientationLayout();
   };
-  window.addEventListener('orientationchange', window.satrughanAutoRotate, {passive:true});
-  window.addEventListener('resize', window.satrughanAutoRotate, {passive:true});
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.satrughanAutoRotate, {once:true});
-  else window.satrughanAutoRotate();
+
+  releaseOrientationLock();
+  updateOrientationLayout();
+
+  window.addEventListener('orientationchange', updateOrientationLayout, {passive:true});
+  window.addEventListener('resize', updateOrientationLayout, {passive:true});
+  window.addEventListener('pageshow', window.satrughanAutoRotate, {passive:true});
+  window.addEventListener('focus', window.satrughanAutoRotate, {passive:true});
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden) window.satrughanAutoRotate();
+  }, {passive:true});
+
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', updateOrientationLayout, {passive:true});
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', window.satrughanAutoRotate, {once:true});
+  }
 })();
 </script>
 
