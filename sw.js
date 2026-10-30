@@ -1,5 +1,6 @@
-/* SATRUGHAN PWA service worker */
-const CACHE_NAME = "satrughan-pwa-v1";
+/* SATRUGHAN PWA service worker - rotation update */
+const CACHE_NAME = "satrughan-pwa-rotation-v2";
+
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -20,7 +21,8 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       )
     ).then(() => self.clients.claim())
   );
@@ -30,32 +32,44 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
 
-  if (request.mode === "navigate") {
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isManifest =
+    url.pathname.endsWith("/manifest.json") ||
+    url.pathname === "/manifest.json";
+
+  if (request.mode === "navigate" || isManifest) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: "no-store" })
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put("./index.html", copy));
+          if (response && response.ok) {
+            const copy = response.clone();
+            const key = isManifest ? request : "./index.html";
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(key, copy));
+          }
           return response;
         })
-        .catch(() => caches.match("./index.html"))
+        .catch(() =>
+          caches.match(isManifest ? request : "./index.html")
+        )
     );
     return;
   }
 
-  const url = new URL(request.url);
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(request).then(cached => {
-        if (cached) return cached;
-        return fetch(request).then(response => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-          }
-          return response;
-        });
-      })
-    );
-  }
+  event.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+
+      return fetch(request).then(response => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(request, copy));
+        }
+        return response;
+      });
+    })
+  );
 });
