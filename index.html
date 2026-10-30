@@ -740,9 +740,7 @@ body.home-mode .app-container{display:none!important}
 body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
 
 .sa-home-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-#landscape-mode-btn{height:42px;padding:0 12px;flex:0 0 auto;border:1px solid rgba(255,255,255,.24);border-radius:13px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:900;white-space:nowrap;cursor:pointer;touch-action:manipulation}
-#landscape-mode-btn:active{transform:scale(.97)}
-@media(max-width:380px){#landscape-mode-btn{height:38px;padding:0 8px;font-size:11px}.sa-home-head-actions{gap:5px}#theme-btn{width:38px;height:38px;flex-basis:38px}}
+@media(max-width:380px){.sa-home-head-actions{gap:5px}#theme-btn{width:38px;height:38px;flex-basis:38px}}
 
 .sa-home-head{
   flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -1816,7 +1814,6 @@ div>
       <div style="min-width:0"><div class="sa-brand-title">SATRUGHAN ANNAPURNA POS</div><div class="sa-brand-sub">Billing • Inventory • Barcode • Printing</div></div>
     </div>
     <div class="sa-home-head-actions">
-      <button id="landscape-mode-btn" onclick="enableLandscapeMode()" aria-label="Enable landscape mode" title="Use app in landscape mode">↻ Landscape</button>
       <button id="theme-btn" onclick="toggleTheme()" aria-label="Toggle day/night theme" title="Day / Night">☀️</button>
     </div>
   </header>
@@ -6603,16 +6600,6 @@ function restoreBillingPartyFromRecovery(recovery){
 }
 
 async function openBilling(){
-  // Ask supported mobile browsers to open Billing in landscape. This must be
-  // attempted directly from the user's tap; browsers may reject it in a normal tab.
-  try{
-    // Respect the Home Screen Landscape ON/OFF switch; OFF means Billing will
-    // not automatically request landscape orientation.
-    if ((!window.saLandscapeModeEnabled || window.saLandscapeModeEnabled()) &&
-        screen.orientation && typeof screen.orientation.lock === 'function') {
-      screen.orientation.lock('landscape').catch(function(){});
-    }
-  }catch(e){}
   try{if(typeof refreshPreviousBillingBillButton==='function')refreshPreviousBillingBillButton();}catch(e){}
   try{if(window.__billingRecoveryStorageReady)await window.__billingRecoveryStorageReady;}catch(e){}
   // Crash/accidental-close recovery is based on the durable Billing recovery
@@ -6747,26 +6734,6 @@ function closeBilling(){
   const ex=document.getElementById("billing-edit-expression");if(ex)ex.value="";
   document.getElementById("billing-overlay").classList.remove("open");
   document.getElementById("billing-overlay").setAttribute("aria-hidden","true");
-  // Keep the Home screen in the mode selected by the Landscape toggle.
-  // Re-apply after Billing closes because some mobile browsers reset orientation
-  // during overlay/navigation transitions.
-  function applySavedHomeOrientation(){
-    try{
-      const landscapeOn = typeof window.saLandscapeModeEnabled === 'function'
-        ? window.saLandscapeModeEnabled()
-        : localStorage.getItem('sa-landscape-mode') === '1';
-      if(landscapeOn){
-        if(screen.orientation && typeof screen.orientation.lock === 'function'){
-          screen.orientation.lock('landscape').catch(function(){});
-        }
-      }else if(screen.orientation && typeof screen.orientation.unlock === 'function'){
-        screen.orientation.unlock();
-      }
-    }catch(e){}
-  }
-  applySavedHomeOrientation();
-  setTimeout(applySavedHomeOrientation, 120);
-  setTimeout(applySavedHomeOrientation, 500);
 }
 function saveBillingCart(){
   const items=Array.isArray(billingCart)?billingCart:[];
@@ -8856,8 +8823,13 @@ async function printPOSInvoice58mm(saveHistory=true){
 <script id="satrughan-auto-rotate">
 (function(){
   'use strict';
-  // Update the layout marker when the device rotates. Do not unlock orientation
-  // here: Billing may have requested landscape while it is open.
+  // Let the phone's system Auto Rotate setting control the app orientation.
+  // Release any orientation lock left by an earlier version of the app.
+  try{
+    if(screen.orientation && typeof screen.orientation.unlock === 'function'){
+      screen.orientation.unlock();
+    }
+  }catch(e){}
   window.satrughanAutoRotate = function(){
     document.documentElement.classList.toggle('satrughan-landscape',
       window.innerWidth > window.innerHeight);
@@ -10668,61 +10640,6 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
 @media(max-width:520px){.billing-camera-card{left:var(--billing-cam-left,8px);top:var(--billing-cam-top,66px);width:var(--billing-cam-width,min(330px,calc(100vw - 16px)));max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);min-width:250px;min-height:220px}.billing-camera-resize-handle{width:32px;height:32px}.billing-camera-resize-handle:before{font-size:20px}}
 </style>
 
-<script id="sa-landscape-mode-button">
-// App-wide orientation toggle: ON requests landscape; OFF requests portrait.
-// Fullscreen and orientation locks are browser/PWA dependent.
-(function(){
-  const KEY='sa-landscape-mode';
-  function isOn(){try{return localStorage.getItem(KEY)==='1';}catch(e){return false;}}
-  function paintButton(){
-    const btn=document.getElementById('landscape-mode-btn'); if(!btn)return;
-    const on=isOn();
-    btn.textContent=on?'✓ Landscape ON':'↻ Landscape OFF';
-    btn.setAttribute('aria-label',on?'Turn landscape mode off':'Turn landscape mode on');
-    btn.title=on?'Tap to use full-screen portrait mode':'Tap to use landscape mode';
-  }
-  async function requestFullscreen(){
-    if(!document.fullscreenElement && document.documentElement.requestFullscreen){
-      try{await document.documentElement.requestFullscreen();}catch(e){}
-    }
-  }
-  async function setOrientation(mode){
-    if(screen.orientation && typeof screen.orientation.lock==='function'){
-      await screen.orientation.lock(mode);
-      return true;
-    }
-    return false;
-  }
-  window.saLandscapeModeEnabled=isOn;
-  window.updateLandscapeModeButton=paintButton;
-  window.enableLandscapeMode=async function(){
-    const btn=document.getElementById('landscape-mode-btn');
-    const turnOn=!isOn();
-    try{
-      await requestFullscreen();
-      if(turnOn){
-        const locked=await setOrientation('landscape');
-        try{localStorage.setItem(KEY,'1');}catch(e){}
-        paintButton();
-        if(!locked && btn)btn.title='Rotate your device to landscape if it does not rotate automatically';
-      }else{
-        // OFF releases the app's orientation lock so the phone's Auto Rotate setting controls orientation.
-        try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}
-        try{localStorage.setItem(KEY,'0');}catch(e){}
-        paintButton();
-        if(btn)btn.title='Phone Auto Rotate controls the screen orientation';
-      }
-    }catch(e){
-      // Keep the selected mode even if this browser does not support orientation lock.
-      try{localStorage.setItem(KEY,turnOn?'1':'0');}catch(err){}
-      paintButton();
-      if(btn)btn.title='Orientation locking is not supported by this browser; rotate the device if needed';
-    }
-  };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintButton,{once:true});
-  else paintButton();
-})();
-</script>
 
 <script id="sa-home-navigation">
 (function(){
@@ -10783,24 +10700,6 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
   function goHome(){
     if(typeof window.saGoHome==='function') window.saGoHome();
     else { document.body.classList.remove('modal-front-open'); document.body.classList.add('home-mode'); window.scrollTo(0,0); }
-    // Preserve the selected orientation after close handlers finish navigation.
-    function reapplySavedOrientation(){
-      try{
-        const on = typeof window.saLandscapeModeEnabled === 'function'
-          ? window.saLandscapeModeEnabled()
-          : localStorage.getItem('sa-landscape-mode') === '1';
-        if(on){
-          if(screen.orientation && typeof screen.orientation.lock === 'function'){
-            screen.orientation.lock('landscape').catch(function(){});
-          }
-        }else if(screen.orientation && typeof screen.orientation.unlock === 'function'){
-          screen.orientation.unlock();
-        }
-      }catch(e){}
-    }
-    reapplySavedOrientation();
-    setTimeout(reapplySavedOrientation, 120);
-    setTimeout(reapplySavedOrientation, 500);
   }
 
   // Calculator Close -> Home. Event delegation also covers the button reliably on mobile.
