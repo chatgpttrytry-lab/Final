@@ -6755,12 +6755,11 @@ function closeBilling(){
       const landscapeOn = typeof window.saLandscapeModeEnabled === 'function'
         ? window.saLandscapeModeEnabled()
         : localStorage.getItem('sa-landscape-mode') === '1';
-      if(screen.orientation && typeof screen.orientation.lock === 'function'){
-        screen.orientation.lock(landscapeOn ? 'landscape' : 'portrait').catch(function(){
-          // Never unlock orientation when Landscape is ON.
-          if(!landscapeOn && typeof screen.orientation.unlock === 'function') screen.orientation.unlock();
-        });
-      }else if(!landscapeOn && screen.orientation && typeof screen.orientation.unlock === 'function'){
+      if(landscapeOn){
+        if(screen.orientation && typeof screen.orientation.lock === 'function'){
+          screen.orientation.lock('landscape').catch(function(){});
+        }
+      }else if(screen.orientation && typeof screen.orientation.unlock === 'function'){
         screen.orientation.unlock();
       }
     }catch(e){}
@@ -10707,13 +10706,11 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
         paintButton();
         if(!locked && btn)btn.title='Rotate your device to landscape if it does not rotate automatically';
       }else{
-        // Explicitly request portrait instead of merely unlocking orientation.
-        let locked=false;
-        try{locked=await setOrientation('portrait');}catch(e){}
-        if(!locked){try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}}
+        // OFF releases the app's orientation lock so the phone's Auto Rotate setting controls orientation.
+        try{if(screen.orientation&&typeof screen.orientation.unlock==='function')screen.orientation.unlock();}catch(e){}
         try{localStorage.setItem(KEY,'0');}catch(e){}
         paintButton();
-        if(!locked && btn)btn.title='Rotate your device to portrait if it does not rotate automatically';
+        if(btn)btn.title='Phone Auto Rotate controls the screen orientation';
       }
     }catch(e){
       // Keep the selected mode even if this browser does not support orientation lock.
@@ -10792,8 +10789,12 @@ window.bsLegacyPhysicalPrint=()=>{const dims=$('bs-size').value.split('x');docum
         const on = typeof window.saLandscapeModeEnabled === 'function'
           ? window.saLandscapeModeEnabled()
           : localStorage.getItem('sa-landscape-mode') === '1';
-        if(screen.orientation && typeof screen.orientation.lock === 'function'){
-          screen.orientation.lock(on ? 'landscape' : 'portrait').catch(function(){});
+        if(on){
+          if(screen.orientation && typeof screen.orientation.lock === 'function'){
+            screen.orientation.lock('landscape').catch(function(){});
+          }
+        }else if(screen.orientation && typeof screen.orientation.unlock === 'function'){
+          screen.orientation.unlock();
         }
       }catch(e){}
     }
