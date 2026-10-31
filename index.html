@@ -50,7 +50,7 @@ html,body{width:100%;height:100%;overflow:hidden}body{background:var(--bg);color
 .display-container{padding:8px 22px 3px;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;min-height:72px;flex:1}.expression{font-size:30px;font-weight:500;white-space:normal;overflow-x:hidden;overflow-y:auto;overflow-wrap:anywhere;word-break:break-word;line-height:1.08;max-height:92px;min-height:34px;color:var(--text);scrollbar-width:thin}.result-preview{font-size:15px;color:var(--muted);min-height:18px;margin-top:2px}
 .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:8px 18px 10px;flex:none}.btn{border:0;outline:0;border-radius:16px;height:clamp(60px,9vh,96px);font-size:22px;font-weight:600;cursor:pointer;color:var(--text);background:var(--surface2);transition:transform .08s,filter .1s,background-color .1s,color .1s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .keypad .btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.keypad .btn.calc-touch-active{background:#16a34a!important;color:#fff!important;transform:scale(.94);filter:brightness(1.08)}
-.keypad .btn.calc-touch-active span{color:#fff!important}.btn:active{transform:scale(.95)}.btn-func{background:var(--surface2);color:var(--blue)}.btn-op{background:var(--blue2);color:var(--blue);font-size:27px}.btn-eq{background:var(--blue);color:#fff;font-size:27px}.btn-eq.saved-feedback{background:#16a34a!important;color:#fff!important}.share-btn{grid-column:span 4;height:42px;border-radius:14px;background:var(--surface2);color:var(--blue);font-size:14px}.calculator-58mm-print-btn{background:var(--blue2);color:var(--blue);display:flex;align-items:center;justify-content:center;gap:4px;font-size:20px}.calculator-58mm-print-btn span{font-size:10px;font-weight:900;line-height:1}.calculator-58mm-print-btn.saved-feedback{background:#16a34a!important;color:#fff!important}.footer-text{text-align:center;font-size:9px;color:var(--muted);padding:0 0 8px;flex:none}
+.keypad .btn.calc-touch-active span{color:#fff!important}.btn:active{transform:scale(.95)}.btn-func{background:var(--surface2);color:var(--blue)}.btn-op{background:var(--blue2);color:var(--blue);font-size:27px}.btn-eq{background:var(--blue);color:#fff;font-size:27px}.btn-eq.saved-feedback{background:#16a34a!important;color:#fff!important}.share-btn{grid-column:span 4;height:42px;border-radius:14px;background:var(--surface2);color:var(--blue);font-size:14px}.calculator-58mm-print-btn{background:var(--blue2);color:var(--blue);display:flex;align-items:center;justify-content:center;gap:4px;font-size:20px}.calculator-58mm-print-btn span{font-size:10px;font-weight:900;line-height:1}.calculator-f11-key,.calculator-f12-key{position:relative}.calculator-key-hint{position:absolute;top:4px;right:6px;font-size:9px!important;font-weight:900;line-height:1!important;opacity:.72;pointer-events:none}.calculator-f11-key>.calculator-key-hint{top:4px;right:5px}.calculator-58mm-print-btn.saved-feedback{background:#16a34a!important;color:#fff!important}.footer-text{text-align:center;font-size:9px;color:var(--muted);padding:0 0 8px;flex:none}
 @media(max-height:680px){.qr-box canvas,.qr-box img{width:160px!important;height:160px!important;max-width:100%;object-fit:contain}.qr-card{padding:8px}.qr-section{padding-bottom:5px}.topbar{height:45px}.keypad{gap:6px}.btn{height:43px}.display-container{min-height:58px}.share-btn{height:35px}}
 
 .top-actions{display:flex;align-items:center;gap:7px}
@@ -1933,7 +1933,7 @@ div>
     </div>
 
     <div class="keypad">
-        <button class="btn btn-func" onclick="handlePress('AC')">AC</button>
+        <button class="btn btn-func calculator-f12-key" onclick="handlePress('AC')"><span class="calculator-key-hint">F12</span>AC</button>
         <button class="btn btn-func" onclick="handlePress('()')">( )</button>
         <button class="btn btn-func" onclick="handlePress('%')">%</button>
         <button class="btn btn-op" onclick="handlePress('÷')">÷</button>
@@ -1954,7 +1954,7 @@ div>
         <button class="btn btn-op" onclick="handlePress('+')">+</button>
 
         <button class="btn btn-num" onclick="handlePress('0')">0</button>
-        <button class="btn btn-num calculator-58mm-print-btn" onclick="printCurrentPayment()" aria-label="Print 58mm invoice" title="Print 58mm invoice">🖨️<span>58mm</span></button>
+        <button class="btn btn-num calculator-58mm-print-btn calculator-f11-key" onclick="printCurrentPayment()" aria-label="Print 58mm invoice" title="Print 58mm invoice"><span class="calculator-key-hint">F11</span>🖨️<span>58mm</span></button>
         <button class="btn btn-num" onclick="handlePress('DEL')">⌫</button>
         <button class="btn btn-eq" onclick="handlePress('=')">=</button>
         
@@ -2439,6 +2439,52 @@ function toggleTheme(){
         }
         updateDisplay();
     }
+
+    // External physical keyboard support for the Calculator Window only.
+    // Keep this handler scoped away from Billing and every other input/modal.
+    document.addEventListener('keydown', function(e){
+        if(document.body.classList.contains('home-mode')) return;
+        const app=document.querySelector('.app-container');
+        if(!app || app.getClientRects().length===0) return;
+
+        const blockedOverlays = '#history-overlay.open, #analytics-overlay.open, #analytics-profit-detail-overlay.open, #recycle-overlay.open, #qr-choice-overlay.open, #invoice-custom-overlay.open, #pos-invoice-preview-overlay.open, #analytics-item-overlay.open, #detail-overlay.open, #printer-panel.open, #item-db-overlay.open, #billing-overlay.open, #billing-drafts-overlay.open, #safeDataModal.show, #notebook-overlay.open, #notebook-form-overlay.open, #notebook-party-picker-overlay.open, #notebook-party-overlay.open, #notebook-party-detail-overlay.open, #notebook-all-items-overlay.open, #notebook-recycle-overlay.open, #cloudBackupModal.open, #party-overlay.open, #party-form-overlay.open, #party-detail-overlay.open, #party-receive-overlay.open, #coupon-voucher-overlay.open';
+        if(document.querySelector(blockedOverlays)) return;
+
+        const active=document.activeElement;
+        const tag=String(active && active.tagName || '').toLowerCase();
+        if(active !== displayExpr && (tag==='input' || tag==='textarea' || tag==='select' || active?.isContentEditable)) return;
+
+        const key=e.key;
+        // Calculator Window shortcuts only: F11 prints the 58mm receipt; F12 clears AC.
+        if(key==='F11'){
+            e.preventDefault();
+            e.stopPropagation();
+            printCurrentPayment();
+            return;
+        }
+        if(key==='F12'){
+            e.preventDefault();
+            e.stopPropagation();
+            handlePress('AC');
+            return;
+        }
+        let calculatorKey=null;
+        if(/^[0-9]$/.test(key)) calculatorKey=key;
+        else if(key==='+') calculatorKey='+';
+        else if(key==='-') calculatorKey='-';
+        else if(key==='*') calculatorKey='×';
+        else if(key==='/') calculatorKey='÷';
+        else if(key==='.' || key===',') calculatorKey='.';
+        else if(key==='Backspace' || key==='Delete') calculatorKey='DEL';
+        else if(key==='Enter' || key==='=') calculatorKey='=';
+        else if(key==='%') calculatorKey='%';
+        else if(key==='(' || key===')') calculatorKey=key;
+        if(calculatorKey===null) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        handlePress(calculatorKey);
+    }, true);
 
     function isOp(char) {
         return ['+', '-', '×', '÷'].includes(char);
@@ -6462,70 +6508,88 @@ function billingKeyboardSelect(){
 }
 function billingKeyboardKeydown(e){
   if(!billingKeyboardIsOpen())return;
-  // Never hijack typing/editing in another input, textarea, select or contenteditable.
   const target=e.target;
   const tag=String(target?.tagName||'').toLowerCase();
   const editable=!!target?.isContentEditable || tag==='textarea' || tag==='select';
   const search=target?.id==='billing-search';
 
-  // F6/F7 are POS payment shortcuts and must win even when an input has focus.
-  // Handle them first in capture phase so page controls cannot turn them into
-  // browser-level navigation/focus actions when the key event reaches the page.
+  // Keep the existing POS payment shortcuts unchanged.
   if(e.key==='F6' || e.code==='F6' || e.key==='F7' || e.code==='F7'){
     const isF6=(e.key==='F6' || e.code==='F6');
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault();e.stopPropagation();
     if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
-    try{
-      if(isF6)setBillingPaymentModeQuick('Credit Card');
-      else setBillingPaymentModeQuick('MDR');
-    }catch(err){console.error('Billing F6/F7 shortcut',e.key,err)}
+    try{if(isF6)setBillingPaymentModeQuick('Credit Card');else setBillingPaymentModeQuick('MDR');}
+    catch(err){console.error('Billing F6/F7 shortcut',e.key,err)}
     return;
   }
 
+  // Cart Qty keyboard navigation: Arrow keys move between Qty fields;
+  // +/- changes only the currently focused cart item's quantity.
+  const qtyInput=target?.matches?.('#billing-overlay .billing-cart-row .qty-stepper input');
+  if(qtyInput){
+    const qtyInputs=[...document.querySelectorAll('#billing-overlay .billing-cart-row .qty-stepper input')];
+    const index=qtyInputs.indexOf(target);
+    const qtyDelta=(e.key==='+' || e.code==='NumpadAdd') ? 1
+      : (e.key==='-' || e.code==='NumpadSubtract') ? -1 : 0;
+    if(qtyDelta && index>=0){
+      e.preventDefault();e.stopPropagation();
+      if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+      changeBillingQty(index,qtyDelta);
+      const updatedInputs=[...document.querySelectorAll('#billing-overlay .billing-cart-row .qty-stepper input')];
+      const focusIndex=Math.min(index,updatedInputs.length-1);
+      if(focusIndex>=0 && updatedInputs[focusIndex]){updatedInputs[focusIndex].focus();updatedInputs[focusIndex].select();}
+      return;
+    }
+    if((e.key==='ArrowDown' || e.key==='ArrowUp') && index>=0){
+      e.preventDefault();e.stopPropagation();
+      if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+      const nextIndex=e.key==='ArrowDown' ? Math.min(index+1,qtyInputs.length-1) : index-1;
+      if(nextIndex>=0 && qtyInputs[nextIndex]){qtyInputs[nextIndex].focus();qtyInputs[nextIndex].select();}
+      else if(e.key==='ArrowUp' && index===0){billingKeyboardFocusSearch();}
+      return;
+    }
+  }
+
   const actions={
-    F1:()=>billingKeyboardFocusSearch(),
-    F2:()=>toggleBillingBarcodeMode(),
-    F3:()=>billingKeyboardOpenAddItem(),
-    F4:()=>setBillingPaymentModeQuick('Cash'),
-    F5:()=>setBillingPaymentModeQuick('UPI'),
-    F8:()=>openBillingPaymentPopup(),
-    F9:()=>saveBillingBillOnly(),
-    F10:()=>generateInvoiceFromBilling(),
-    F11:()=>oneTapPrintFromBilling(),
-    F12:()=>startNextBillingBill()
+    F1:()=>billingKeyboardFocusSearch(),F2:()=>toggleBillingBarcodeMode(),F3:()=>billingKeyboardOpenAddItem(),
+    F4:()=>setBillingPaymentModeQuick('Cash'),F5:()=>setBillingPaymentModeQuick('UPI'),F8:()=>openBillingPaymentPopup(),
+    F9:()=>saveBillingBillOnly(),F10:()=>generateInvoiceFromBilling(),F11:()=>oneTapPrintFromBilling(),F12:()=>startNextBillingBill()
   };
-  // Ctrl = Credit Card, Alt = MDR. F6/F7 are intentionally removed.
   if(e.ctrlKey && !e.altKey && (e.key==='Control' || e.code==='ControlLeft' || e.code==='ControlRight')){
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
     try{setBillingPaymentModeQuick('Credit Card')}catch(err){console.error('Billing keyboard shortcut Ctrl',err)}
     return;
   }
   if(e.altKey && !e.ctrlKey && (e.key==='Alt' || e.code==='AltLeft' || e.code==='AltRight')){
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
     try{setBillingPaymentModeQuick('MDR')}catch(err){console.error('Billing keyboard shortcut Alt',err)}
     return;
   }
   if(Object.prototype.hasOwnProperty.call(actions,e.key)){
-    // Keep number/text fields fully usable. Function-key shortcuts are active
-    // from the Billing surface, but never while editing another input field.
-    if(editable || (target && (tag==='input') && !search))return;
-    e.preventDefault();
-    e.stopPropagation();
+    if(editable || (target && tag==='input' && !search))return;
+    e.preventDefault();e.stopPropagation();
     try{actions[e.key]()}catch(err){console.error('Billing keyboard shortcut',e.key,err)}
     return;
   }
   if(editable || !search)return;
   if(e.key==='ArrowDown'){
+    // Blank Search Bar -> first Qty; otherwise preserve search-result navigation.
+    if(!String(target.value||'').trim()){
+      const firstQty=document.querySelector('#billing-overlay .billing-cart-row .qty-stepper input');
+      if(firstQty){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();firstQty.focus();firstQty.select();return;}
+    }
+    const resultRows=[...document.querySelectorAll('#billing-search-results .billing-result:not(.billing-new-item)')];
+    if(!resultRows.length){
+      const firstQty=document.querySelector('#billing-overlay .billing-cart-row .qty-stepper input');
+      if(firstQty){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();firstQty.focus();firstQty.select();return;}
+    }
     e.preventDefault();e.stopPropagation();billingKeyboardMove(1);return;
   }
   if(e.key==='ArrowUp'){
     e.preventDefault();e.stopPropagation();billingKeyboardMove(-1);return;
   }
-  if(e.key==='Enter'){
-    if(billingKeyboardSelect()){
-      e.preventDefault();e.stopPropagation();
-    }
+  if(e.key==='Enter' && billingKeyboardSelect()){
+    e.preventDefault();e.stopPropagation();
   }
 }
 function initBillingKeyboardShortcuts(){
