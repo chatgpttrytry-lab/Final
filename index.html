@@ -740,7 +740,9 @@ body.home-mode .app-container{display:none!important}
 body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
 
 .sa-home-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-@media(max-width:380px){.sa-home-head-actions{gap:5px}#theme-btn{width:38px;height:38px;flex-basis:38px}}
+#sa-settings-btn{width:42px;height:42px;flex:0 0 42px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(255,255,255,.10);color:#fff;font-size:19px;cursor:pointer;display:grid;place-items:center}
+#sa-settings-btn:active{transform:scale(.95)}
+@media(max-width:380px){.sa-home-head-actions{gap:5px}#theme-btn,#sa-settings-btn{width:38px;height:38px;flex-basis:38px}}
 
 .sa-home-head{
   flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -753,6 +755,18 @@ body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
 .sa-brand-title{font-size:18px;font-weight:900;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sa-brand-sub{font-size:11px;opacity:.72;margin-top:2px}
 #theme-btn{width:42px;height:42px;flex:0 0 42px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(255,255,255,.10);color:#fff;font-size:19px;cursor:pointer}
+#sa-device-settings{position:absolute;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,25,.62);backdrop-filter:blur(5px)}
+#sa-device-settings.open{display:flex}
+.sa-device-settings-card{width:min(100%,390px);padding:20px;border:1px solid var(--sa-card-border);border-radius:20px;background:var(--sa-card);color:var(--text);box-shadow:0 18px 50px rgba(0,0,0,.28)}
+.sa-device-settings-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.sa-device-settings-title{font-size:17px;font-weight:900}
+#sa-device-settings-close{width:34px;height:34px;border:0;border-radius:10px;background:var(--surface2);color:var(--text);font-size:19px;cursor:pointer}
+.sa-device-zoom-value{font-size:24px;font-weight:900;color:var(--blue);font-variant-numeric:tabular-nums}
+.sa-device-zoom-slider{width:100%;margin:18px 0 8px;accent-color:var(--blue);cursor:pointer;touch-action:pan-y}
+.sa-device-zoom-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;font-weight:700}
+.sa-device-settings-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
+#sa-device-zoom-reset{padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-size:12px;font-weight:800;cursor:pointer}
+.sa-device-zoom-saved{font-size:11px;color:var(--muted)}
 .sa-home-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:17px 18px 18px;-webkit-overflow-scrolling:touch}
 .sa-welcome{display:flex;align-items:center;gap:12px;margin:0 auto 14px;max-width:980px;padding:4px 2px}
 .sa-welcome-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:rgba(213,155,42,.14);color:var(--sa-gold);font-size:22px;flex:0 0 42px}
@@ -788,6 +802,8 @@ body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
 .sa-arrow{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.17);font-size:18px;font-weight:800;z-index:1}
 .sa-home-footer{text-align:center;color:var(--muted);font-size:10px;padding:0 0 3px}
 @media (max-width:600px){
+  /* Device display zoom applies to the app only on mobile; desktop remains unchanged. */
+  body{zoom:var(--sa-device-zoom,1);width:calc(100% / var(--sa-device-zoom,1));height:calc(100% / var(--sa-device-zoom,1))}
   #sa-home{height:100dvh;max-width:100%;border-radius:0;border:0}
   .sa-home-head{padding:12px 13px}.sa-home-scroll{padding:12px 11px 16px}.sa-welcome{margin-bottom:10px}
   .sa-grid{gap:8px}.sa-card{min-height:92px;padding:10px 8px 10px 9px;grid-template-columns:36px minmax(0,1fr) 26px;gap:7px;border-radius:15px}
@@ -1815,8 +1831,27 @@ div>
     </div>
     <div class="sa-home-head-actions">
       <button id="theme-btn" onclick="toggleTheme()" aria-label="Toggle day/night theme" title="Day / Night">☀️</button>
+      <button id="sa-settings-btn" type="button" onclick="saOpenDeviceSettings()" aria-label="Settings" title="Settings">⚙️</button>
     </div>
   </header>
+  <section id="sa-device-settings" aria-hidden="true" onclick="if(event.target===this)saCloseDeviceSettings()">
+    <div class="sa-device-settings-card" role="dialog" aria-modal="true" aria-labelledby="sa-device-settings-title">
+      <div class="sa-device-settings-head">
+        <div class="sa-device-settings-title" id="sa-device-settings-title">Screen Size Adjust</div>
+        <button id="sa-device-settings-close" type="button" onclick="saCloseDeviceSettings()" aria-label="Close settings">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <label for="sa-device-zoom">Screen Zoom</label>
+        <output class="sa-device-zoom-value" id="sa-device-zoom-value" for="sa-device-zoom">100%</output>
+      </div>
+      <input class="sa-device-zoom-slider" id="sa-device-zoom" type="range" min="50" max="130" step="5" value="100" aria-label="Screen zoom percentage">
+      <div class="sa-device-zoom-labels"><span>50% Small</span><span>130% Large</span></div>
+      <div class="sa-device-settings-foot">
+        <button id="sa-device-zoom-reset" type="button" onclick="saResetDeviceZoom()">Reset to 100%</button>
+        <span class="sa-device-zoom-saved">Automatically saved</span>
+      </div>
+    </div>
+  </section>
   <main class="sa-home-scroll">
     <section class="sa-welcome">
       <div class="sa-welcome-icon">⌂</div>
@@ -13618,6 +13653,31 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<script id="sa-device-screen-zoom">
+(function(){
+  const KEY='sa-device-screen-zoom';
+  const slider=document.getElementById('sa-device-zoom');
+  const value=document.getElementById('sa-device-zoom-value');
+  const overlay=document.getElementById('sa-device-settings');
+  if(!slider||!value||!overlay)return;
+  function clampZoom(n){n=Math.round(Number(n)/5)*5;return Math.min(130,Math.max(50,Number.isFinite(n)?n:100));}
+  function applyZoom(n,save){
+    const z=clampZoom(n);
+    document.body.style.setProperty('--sa-device-zoom',String(z/100));
+    slider.value=String(z);
+    value.textContent=z+'%';
+    if(save){try{localStorage.setItem(KEY,String(z));}catch(e){}}
+  }
+  window.saOpenDeviceSettings=function(){overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');};
+  window.saCloseDeviceSettings=function(){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');};
+  window.saResetDeviceZoom=function(){applyZoom(100,true);};
+  slider.addEventListener('input',function(){applyZoom(slider.value,true);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&overlay.classList.contains('open'))window.saCloseDeviceSettings();});
+  let saved=100;
+  try{const raw=localStorage.getItem(KEY);if(raw!==null)saved=Number(raw);}catch(e){}
+  applyZoom(saved,false);
+})();
+</script>
 </body>
 
 <style id="bs-sticker-content-fit-final">
