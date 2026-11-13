@@ -3,7 +3,7 @@
 <head>
     <!-- Cleaned: no external font/network dependency. QR generation uses the required QRCode library below. -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
 <style id="startup-no-flash-fix">
 /* Startup anti-flash: lock the whole page until the initial DOM is parsed.
    This prevents a one-frame/0.1s flash of the calculator shell or another
@@ -555,7 +555,7 @@ body.modal-front-open{overflow:hidden!important}
 }
 </style>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0b1f3a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -740,9 +740,7 @@ body.home-mode .app-container{display:none!important}
 body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
 
 .sa-home-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-#sa-settings-btn{width:42px;height:42px;flex:0 0 42px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(255,255,255,.10);color:#fff;font-size:19px;cursor:pointer;display:grid;place-items:center}
-#sa-settings-btn:active{transform:scale(.95)}
-@media(max-width:380px){.sa-home-head-actions{gap:5px}#theme-btn,#sa-settings-btn{width:38px;height:38px;flex-basis:38px}}
+@media(max-width:380px){.sa-home-head-actions{gap:5px}#theme-btn{width:38px;height:38px;flex-basis:38px}}
 
 .sa-home-head{
   flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -755,18 +753,6 @@ body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
 .sa-brand-title{font-size:18px;font-weight:900;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sa-brand-sub{font-size:11px;opacity:.72;margin-top:2px}
 #theme-btn{width:42px;height:42px;flex:0 0 42px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(255,255,255,.10);color:#fff;font-size:19px;cursor:pointer}
-#sa-device-settings{position:absolute;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,25,.62);backdrop-filter:blur(5px)}
-#sa-device-settings.open{display:flex}
-.sa-device-settings-card{width:min(100%,390px);padding:20px;border:1px solid var(--sa-card-border);border-radius:20px;background:var(--sa-card);color:var(--text);box-shadow:0 18px 50px rgba(0,0,0,.28)}
-.sa-device-settings-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.sa-device-settings-title{font-size:17px;font-weight:900}
-#sa-device-settings-close{width:34px;height:34px;border:0;border-radius:10px;background:var(--surface2);color:var(--text);font-size:19px;cursor:pointer}
-.sa-device-zoom-value{font-size:24px;font-weight:900;color:var(--blue);font-variant-numeric:tabular-nums}
-.sa-device-zoom-slider{width:100%;margin:18px 0 8px;accent-color:var(--blue);cursor:pointer;touch-action:pan-y}
-.sa-device-zoom-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;font-weight:700}
-.sa-device-settings-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
-#sa-device-zoom-reset{padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-size:12px;font-weight:800;cursor:pointer}
-.sa-device-zoom-saved{font-size:11px;color:var(--muted)}
 .sa-home-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:17px 18px 18px;-webkit-overflow-scrolling:touch}
 .sa-welcome{display:flex;align-items:center;gap:12px;margin:0 auto 14px;max-width:980px;padding:4px 2px}
 .sa-welcome-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:rgba(213,155,42,.14);color:var(--sa-gold);font-size:22px;flex:0 0 42px}
@@ -802,8 +788,6 @@ body.home-mode{background:var(--sa-home-bg);align-items:center;overflow:hidden}
 .sa-arrow{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.17);font-size:18px;font-weight:800;z-index:1}
 .sa-home-footer{text-align:center;color:var(--muted);font-size:10px;padding:0 0 3px}
 @media (max-width:600px){
-  /* Device display zoom applies to the app only on mobile; desktop remains unchanged. */
-  body{zoom:var(--sa-device-zoom,1);width:calc(100% / var(--sa-device-zoom,1));height:calc(100% / var(--sa-device-zoom,1))}
   #sa-home{height:100dvh;max-width:100%;border-radius:0;border:0}
   .sa-home-head{padding:12px 13px}.sa-home-scroll{padding:12px 11px 16px}.sa-welcome{margin-bottom:10px}
   .sa-grid{gap:8px}.sa-card{min-height:92px;padding:10px 8px 10px 9px;grid-template-columns:36px minmax(0,1fr) 26px;gap:7px;border-radius:15px}
@@ -1586,6 +1570,182 @@ body.dark #billing-overlay button {
  #billing-overlay.open .billing-grand-loyalty-values{margin-top:1px!important;gap:2px!important}
 }
 </style>
+
+<style id="satrughan-universal-responsive-autofit">
+/* Universal responsive auto-fit layer.
+   Layout reflows with available width/height; no page scaling, zoom slider,
+   or user-operated sizing controls are used. Existing feature-specific styles
+   and billing orientation rules remain in place. */
+:root{
+  --sa-safe-top:env(safe-area-inset-top,0px);
+  --sa-safe-right:env(safe-area-inset-right,0px);
+  --sa-safe-bottom:env(safe-area-inset-bottom,0px);
+  --sa-safe-left:env(safe-area-inset-left,0px);
+  --sa-fluid-gap:clamp(6px,1.25vw,14px);
+}
+html{
+  width:100%;min-width:0;min-height:100%;
+  min-height:100svh;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+body{
+  width:100%;min-width:0;min-height:100%;
+  min-height:100svh;
+  padding:var(--sa-safe-top) var(--sa-safe-right) var(--sa-safe-bottom) var(--sa-safe-left);
+  overscroll-behavior:none;
+}
+*,*::before,*::after{min-width:0;}
+img,canvas,svg,video{max-width:100%;}
+input,select,textarea,button{max-width:100%;}
+
+/* Main launcher: the scroll region absorbs short screens, while cards gain
+   columns on tablets instead of being globally shrunk. */
+#sa-home{
+  width:min(100%,1440px);
+  height:calc(100dvh - var(--sa-safe-top) - var(--sa-safe-bottom));
+  min-height:0;
+  max-height:none;
+  margin-inline:auto;
+}
+#sa-home .sa-home-head{min-width:0;max-width:100%;}
+#sa-home .sa-brand-wrap,#sa-home .sa-home-head-actions{min-width:0;}
+#sa-home .sa-home-scroll{
+  min-height:0;min-width:0;overflow-x:hidden;overflow-y:auto;
+  padding-bottom:max(16px,var(--sa-safe-bottom));
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+}
+#sa-home .sa-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+#sa-home .sa-card{min-width:0;}
+#sa-home .sa-card-title,#sa-home .sa-card-sub{overflow-wrap:anywhere;}
+
+/* Calculator/app shell and common flex/grid children must be allowed to
+   shrink inside narrow devices rather than force page-width overflow. */
+.app-container{
+  width:100%;max-width:1440px;min-width:0;
+  height:calc(100dvh - var(--sa-safe-top) - var(--sa-safe-bottom));
+  max-height:none;margin-inline:auto;
+}
+.app-container>*{min-width:0;}
+.topbar,.top-actions{min-width:0;max-width:100%;}
+.top-actions{flex-wrap:wrap;}
+.display-container,.expression,.result-preview{min-width:0;max-width:100%;}
+.expression{overflow-wrap:anywhere;}
+.keypad{grid-template-columns:repeat(4,minmax(0,1fr));}
+.keypad .btn{min-width:0;}
+
+/* Standard modal and overlay sizing: use the actual available viewport and
+   internal scrolling rather than clipping content on compact/short displays. */
+.history-overlay,.recycle-overlay,.detail-overlay,.analytics-item-overlay,
+.custom-date-range-overlay,.db-billing-overlay{
+  padding:max(8px,var(--sa-safe-top)) max(8px,var(--sa-safe-right))
+          max(8px,var(--sa-safe-bottom)) max(8px,var(--sa-safe-left));
+}
+.history-window,.recycle-window,.detail-window,.analytics-item-window,
+.db-billing-window,.custom-date-range-card{
+  min-width:0;max-width:100%;max-height:calc(100dvh - var(--sa-safe-top) - var(--sa-safe-bottom) - 16px);
+}
+.history-list,.recycle-body,.detail-body,.analytics-item-body,
+.db-billing-body{min-width:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+
+/* Tables, long labels and item rows may wrap within their own panels. */
+.history-item,.recycle-item,.analytics-item-row,.detail-item-line,
+.billing-cart-row,.billing-cart-head{min-width:0;}
+.history-info,.recycle-item-info,.analytics-item-name,.detail-item-name,
+.billing-cart-row>*{min-width:0;overflow-wrap:anywhere;}
+#billing-overlay .db-billing-window{min-width:0;max-width:100%;}
+#billing-overlay .db-billing-body{min-width:0;}
+#billing-overlay .billing-customer-payment-layout,
+#billing-overlay .billing-cart-tools-row{min-width:0;}
+
+/* Phone portrait. */
+@media (max-width:600px){
+  body{padding:var(--sa-safe-top) var(--sa-safe-right) var(--sa-safe-bottom) var(--sa-safe-left);}
+  #sa-home,.app-container{width:100%;max-width:none;border-radius:0;border-left:0;border-right:0;}
+  #sa-home .sa-home-head{gap:8px;padding-inline:clamp(9px,3vw,15px);}
+  #sa-home .sa-brand-title{font-size:clamp(12px,3.5vw,16px);line-height:1.2;}
+  #sa-home .sa-brand-sub{font-size:clamp(9px,2.5vw,11px);}
+  #sa-home .sa-home-scroll{padding-inline:clamp(8px,2.8vw,14px);}
+  #sa-home .sa-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(6px,1.8vw,10px);}
+  #sa-home .sa-card{grid-template-columns:clamp(30px,9vw,40px) minmax(0,1fr) 24px;gap:clamp(5px,1.6vw,8px);}
+  #sa-home .sa-card-title{font-size:clamp(11px,3.1vw,13px);}
+  #sa-home .sa-card-sub{font-size:clamp(8.5px,2.4vw,10px);}
+  .app-container{height:calc(100dvh - var(--sa-safe-top) - var(--sa-safe-bottom));}
+  .top-actions{gap:clamp(3px,1vw,7px);}
+  .top-actions button{flex:0 0 auto;}
+  .config-section{padding-inline:clamp(8px,3vw,18px);}
+  .keypad{padding-inline:clamp(8px,3vw,18px);gap:clamp(5px,1.6vw,9px);}
+}
+
+/* Compact landscape phones: preserve usable controls and let the launcher
+   scroll vertically; the existing billing-specific landscape design wins. */
+@media (orientation:landscape) and (max-height:520px){
+  #sa-home{height:calc(100dvh - var(--sa-safe-top) - var(--sa-safe-bottom));}
+  #sa-home .sa-home-head{padding-block:6px;}
+  #sa-home .sa-home-scroll{padding-block:8px 14px;}
+  #sa-home .sa-welcome{margin-bottom:7px;}
+  #sa-home .sa-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+  #sa-home .sa-card{min-height:70px;padding:7px;}
+  .app-container{height:calc(100dvh - var(--sa-safe-top) - var(--sa-safe-bottom));}
+}
+
+/* Tablet layouts: use additional horizontal room for cards and fluid type. */
+@media (min-width:700px) and (orientation:portrait){
+  #sa-home .sa-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(10px,1.5vw,18px);}
+  #sa-home .sa-card{min-height:clamp(96px,11vw,128px);}
+  #sa-home .sa-card-title{font-size:clamp(13px,1.6vw,17px);}
+  #sa-home .sa-card-sub{font-size:clamp(10px,1.15vw,12px);}
+}
+@media (min-width:900px) and (orientation:landscape){
+  #sa-home .sa-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (min-width:1200px){
+  #sa-home .sa-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+}
+
+/* Very short viewports: keep the page navigable instead of hiding the tail. */
+@media (max-height:520px){
+  #sa-home .sa-home-scroll{overflow-y:auto;}
+  .history-window,.recycle-window,.detail-window,.analytics-item-window,
+  .db-billing-window{max-height:calc(100dvh - 12px);}
+}
+</style>
+
+
+<style id="satrughan-responsive-billing-cart-fit">
+/* Keep the eight-column billing item grid inside compact phone widths. */
+@media (max-width:520px){
+  #billing-overlay .billing-cart{min-width:0;max-width:100%;overflow-x:hidden!important;}
+  #billing-overlay .billing-cart-head,
+  #billing-overlay .billing-cart-row{
+    grid-template-columns:18px minmax(58px,1fr) 34px 50px 42px 48px 50px 28px!important;
+    gap:1px!important;padding-inline:3px!important;box-sizing:border-box!important;
+  }
+  #billing-overlay .billing-cart-row input:not(.billing-select-box){min-width:0;height:32px;font-size:10px;padding-inline:3px;}
+  #billing-overlay .billing-cart-row .cart-name{font-size:10px;line-height:1.15;overflow-wrap:anywhere;}
+  #billing-overlay .billing-cart-row .qty-stepper{grid-template-columns:14px minmax(18px,1fr) 14px;gap:1px;}
+  #billing-overlay .billing-cart-row .qty-stepper button{width:14px;height:28px;font-size:12px;}
+  #billing-overlay .billing-cart-row .qty-stepper input{height:28px;padding:0 1px;font-size:10px;}
+  #billing-overlay .billing-cart-row>span,
+  #billing-overlay .billing-cart-row .billing-final-rate{font-size:10px;white-space:normal;overflow-wrap:anywhere;}
+  #billing-overlay .billing-cart-row .cart-del{width:26px!important;height:30px!important;font-size:16px!important;}
+}
+@media (max-width:380px){
+  #billing-overlay .billing-cart-head,
+  #billing-overlay .billing-cart-row{
+    grid-template-columns:16px minmax(48px,1fr) 28px 40px 36px 42px 42px 26px!important;
+    gap:1px!important;padding-inline:2px!important;
+  }
+  #billing-overlay .billing-cart-row input:not(.billing-select-box){font-size:9px;padding-inline:2px;}
+  #billing-overlay .billing-cart-row .cart-name,
+  #billing-overlay .billing-cart-row>span,
+  #billing-overlay .billing-cart-row .billing-final-rate{font-size:9px;}
+  #billing-overlay .billing-cart-row .qty-stepper{grid-template-columns:12px minmax(16px,1fr) 12px;}
+  #billing-overlay .billing-cart-row .qty-stepper button{width:12px;font-size:10px;}
+  #billing-overlay .billing-cart-row .cart-del{width:24px!important;height:28px!important;}
+}
+</style>
+
 </head>
 <body class="home-mode">
 <!-- COUPON VOUCHER MOVED TO HOME SCREEN AS TOP-LEVEL WINDOW; EXISTING DESIGN/PRINT LOGIC REUSED -->
@@ -1831,27 +1991,8 @@ div>
     </div>
     <div class="sa-home-head-actions">
       <button id="theme-btn" onclick="toggleTheme()" aria-label="Toggle day/night theme" title="Day / Night">☀️</button>
-      <button id="sa-settings-btn" type="button" onclick="saOpenDeviceSettings()" aria-label="Settings" title="Settings">⚙️</button>
     </div>
   </header>
-  <section id="sa-device-settings" aria-hidden="true" onclick="if(event.target===this)saCloseDeviceSettings()">
-    <div class="sa-device-settings-card" role="dialog" aria-modal="true" aria-labelledby="sa-device-settings-title">
-      <div class="sa-device-settings-head">
-        <div class="sa-device-settings-title" id="sa-device-settings-title">Screen Size Adjust</div>
-        <button id="sa-device-settings-close" type="button" onclick="saCloseDeviceSettings()" aria-label="Close settings">✕</button>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <label for="sa-device-zoom">Screen Zoom</label>
-        <output class="sa-device-zoom-value" id="sa-device-zoom-value" for="sa-device-zoom">100%</output>
-      </div>
-      <input class="sa-device-zoom-slider" id="sa-device-zoom" type="range" min="50" max="130" step="5" value="100" aria-label="Screen zoom percentage">
-      <div class="sa-device-zoom-labels"><span>50% Small</span><span>130% Large</span></div>
-      <div class="sa-device-settings-foot">
-        <button id="sa-device-zoom-reset" type="button" onclick="saResetDeviceZoom()">Reset to 100%</button>
-        <span class="sa-device-zoom-saved">Automatically saved</span>
-      </div>
-    </div>
-  </section>
   <main class="sa-home-scroll">
     <section class="sa-welcome">
       <div class="sa-welcome-icon">⌂</div>
@@ -13653,31 +13794,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<script id="sa-device-screen-zoom">
-(function(){
-  const KEY='sa-device-screen-zoom';
-  const slider=document.getElementById('sa-device-zoom');
-  const value=document.getElementById('sa-device-zoom-value');
-  const overlay=document.getElementById('sa-device-settings');
-  if(!slider||!value||!overlay)return;
-  function clampZoom(n){n=Math.round(Number(n)/5)*5;return Math.min(130,Math.max(50,Number.isFinite(n)?n:100));}
-  function applyZoom(n,save){
-    const z=clampZoom(n);
-    document.body.style.setProperty('--sa-device-zoom',String(z/100));
-    slider.value=String(z);
-    value.textContent=z+'%';
-    if(save){try{localStorage.setItem(KEY,String(z));}catch(e){}}
-  }
-  window.saOpenDeviceSettings=function(){overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');};
-  window.saCloseDeviceSettings=function(){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');};
-  window.saResetDeviceZoom=function(){applyZoom(100,true);};
-  slider.addEventListener('input',function(){applyZoom(slider.value,true);});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&overlay.classList.contains('open'))window.saCloseDeviceSettings();});
-  let saved=100;
-  try{const raw=localStorage.getItem(KEY);if(raw!==null)saved=Number(raw);}catch(e){}
-  applyZoom(saved,false);
-})();
-</script>
 </body>
 
 <style id="bs-sticker-content-fit-final">
