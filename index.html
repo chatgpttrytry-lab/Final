@@ -555,7 +555,7 @@ body.modal-front-open{overflow:hidden!important}
 }
 </style>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0b1f3a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13794,6 +13794,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+
 </body>
 
 <style id="bs-sticker-content-fit-final">
@@ -14468,5 +14470,76 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  window.addEventListener('resize',arrangeBillingTotalBoxes,{passive:true});
  window.addEventListener('orientationchange',arrangeBillingTotalBoxes,{passive:true});
  document.addEventListener('click',function(e){if(e.target.closest('#billing-overlay'))setTimeout(arrangeBillingTotalBoxes,0)},true);
+})();
+</script>
+<script id="satrughan-js-auto-scale-fit">
+/* JavaScript-only viewport auto-fit: scales down only when real horizontal
+   overflow is detected. No controls are added and existing CSS is untouched. */
+(function(){
+  'use strict';
+  var root=document.documentElement;
+  var body=document.body;
+  if(!root||!body)return;
+  var scheduled=false;
+  var lastScale=1;
+  var MIN_SCALE=0.72;
+  var MAX_SCALE=1;
+
+  function viewportWidth(){
+    var vv=window.visualViewport;
+    return Math.max(1,Math.floor(vv&&vv.width?vv.width:window.innerWidth||root.clientWidth||1));
+  }
+  function setScale(scale){
+    scale=Math.max(MIN_SCALE,Math.min(MAX_SCALE,scale));
+    var zoomValue=String(Number(scale.toFixed(3)));
+    if(Math.abs(scale-lastScale)<0.005&&body.style.zoom===zoomValue)return;
+    lastScale=scale;
+    /* CSS zoom is supported by the Chromium-based Android WebView/browser
+       commonly used for this app and preserves normal document flow. */
+    body.style.zoom=zoomValue;
+    body.dataset.jsAutoScale=scale.toFixed(3);
+  }
+  function measureAndFit(){
+    scheduled=false;
+    if(!document.body)return;
+    var width=viewportWidth();
+    body.style.zoom='1';
+    var contentWidth=Math.max(root.scrollWidth,body.scrollWidth,root.offsetWidth,body.offsetWidth);
+    var ratio=width/Math.max(width,contentWidth);
+    if(ratio<0.995){
+      setScale(Math.max(MIN_SCALE,ratio*0.995));
+    }else{
+      setScale(1);
+    }
+  }
+  function scheduleFit(){
+    if(scheduled)return;
+    scheduled=true;
+    window.requestAnimationFrame(measureAndFit);
+  }
+  function observe(){
+    scheduleFit();
+    if(window.ResizeObserver){
+      var ro=new ResizeObserver(scheduleFit);
+      ro.observe(root);
+      ro.observe(body);
+    }
+    if(window.MutationObserver){
+      var mo=new MutationObserver(function(){scheduleFit();});
+      mo.observe(body,{subtree:true,childList:true,attributes:false,characterData:false});
+    }
+    window.addEventListener('resize',scheduleFit,{passive:true});
+    window.addEventListener('orientationchange',function(){setTimeout(scheduleFit,120);},{passive:true});
+    window.addEventListener('pageshow',scheduleFit,{passive:true});
+    document.addEventListener('visibilitychange',function(){if(!document.hidden)scheduleFit();});
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize',scheduleFit,{passive:true});
+      window.visualViewport.addEventListener('scroll',scheduleFit,{passive:true});
+    }
+    if(document.fonts&&document.fonts.ready){document.fonts.ready.then(scheduleFit).catch(function(){});}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observe,{once:true});
+  else observe();
+  window.SatrughanAutoScale={refresh:scheduleFit,getScale:function(){return lastScale;}};
 })();
 </script>
