@@ -1814,6 +1814,7 @@ div>
       <div style="min-width:0"><div class="sa-brand-title">SATRUGHAN ANNAPURNA POS</div><div class="sa-brand-sub">Billing • Inventory • Barcode • Printing</div></div>
     </div>
     <div class="sa-home-head-actions">
+      <button id="sa-settings-open" type="button" onclick="saOpenSettings()" aria-label="Open Settings" title="Settings" style="height:42px;min-width:42px;padding:0 10px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(255,255,255,.10);color:#fff;font-size:13px;font-weight:900;cursor:pointer">⚙️ Settings</button>
       <button id="theme-btn" onclick="toggleTheme()" aria-label="Toggle day/night theme" title="Day / Night">☀️</button>
     </div>
   </header>
@@ -14292,5 +14293,156 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  window.addEventListener('resize',arrangeBillingTotalBoxes,{passive:true});
  window.addEventListener('orientationchange',arrangeBillingTotalBoxes,{passive:true});
  document.addEventListener('click',function(e){if(e.target.closest('#billing-overlay'))setTimeout(arrangeBillingTotalBoxes,0)},true);
+})();
+</script>
+
+
+<!-- ISOLATED ADD-ON: Settings window + offline hotspot QR customer display -->
+<style id="sa-customer-display-addon-style">
+#sa-settings-overlay{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(4,10,24,.68);backdrop-filter:blur(5px)}
+#sa-settings-overlay.open{display:flex}
+#sa-settings-window{width:min(620px,100%);max-height:94dvh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);border-radius:19px;background:var(--surface);color:var(--text);box-shadow:0 22px 70px rgba(0,0,0,.35)}
+.sa-settings-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.sa-settings-head b{font-size:16px}.sa-settings-head small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+.sa-settings-close{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface);color:var(--text);font-size:18px;font-weight:900}
+.sa-settings-body{overflow:auto;padding:14px}
+.sa-setting-card{padding:13px;border:1px solid var(--border);border-radius:14px;background:var(--surface);margin-bottom:10px}
+.sa-setting-card h3{font-size:13px;margin-bottom:6px}.sa-setting-card p{font-size:10px;line-height:1.55;color:var(--muted);margin:4px 0}
+.sa-cd-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.sa-cd-btn{min-height:42px;padding:9px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-size:11px;font-weight:900;cursor:pointer}
+.sa-cd-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.sa-cd-btn.danger{color:#c62828;border-color:#e5b9b9;background:#fff7f7}
+.sa-cd-status{padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);font-size:10px;font-weight:900;line-height:1.45;overflow-wrap:anywhere}
+#sa-cd-qr{display:flex;justify-content:center;align-items:center;min-height:180px;padding:10px;margin-top:9px;border-radius:12px;background:#fff;color:#111}
+#sa-cd-qr canvas,#sa-cd-qr img{max-width:100%;height:auto!important}
+#sa-cd-code{width:100%;min-height:76px;margin-top:8px;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text);font-size:9px;resize:vertical;overflow-wrap:anywhere}
+#sa-cd-camera-overlay{position:fixed;inset:0;z-index:2147483500;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.78)}
+#sa-cd-camera-overlay.open{display:flex}#sa-cd-camera-card{width:min(430px,100%);padding:12px;border-radius:15px;background:var(--surface);color:var(--text)}
+#sa-cd-video{display:block;width:100%;max-height:55dvh;object-fit:cover;background:#000;border-radius:10px;margin:8px 0}
+#sa-customer-screen{position:fixed;inset:0;z-index:2147483600;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;background:#101a31;color:#fff;text-align:center}
+#sa-customer-screen.open{display:flex}#sa-customer-shop{font-size:clamp(16px,3vw,24px);font-weight:900;letter-spacing:.4px}
+#sa-customer-caption{font-size:13px;opacity:.75;font-weight:800;letter-spacing:1.2px}
+#sa-customer-amount{font-size:clamp(42px,12vw,82px);font-weight:950;line-height:1.05;overflow-wrap:anywhere}
+#sa-customer-qr{width:min(66vw,310px);min-height:150px;display:flex;align-items:center;justify-content:center;padding:12px;border-radius:18px;background:#fff;color:#111}
+#sa-customer-qr canvas,#sa-customer-qr img{width:min(100%,280px)!important;height:auto!important;aspect-ratio:1;object-fit:contain}
+#sa-customer-pay-note{font-size:12px;font-weight:800;color:#dbe7ff;max-width:340px;line-height:1.5}
+#sa-customer-link-state{position:absolute;left:12px;right:12px;bottom:12px;font-size:10px;color:#cbd5e1;opacity:.75}
+@media(max-width:420px){.sa-cd-actions{grid-template-columns:1fr}#sa-settings-window{max-height:96dvh;border-radius:14px}.sa-settings-body{padding:10px}}
+</style>
+<div id="sa-settings-overlay" aria-hidden="true">
+ <section id="sa-settings-window" role="dialog" aria-modal="true" aria-labelledby="sa-settings-title">
+  <header class="sa-settings-head"><div><b id="sa-settings-title">⚙️ Settings</b><small>SATRUGHAN ANNAPURNA POS</small></div><button class="sa-settings-close" type="button" onclick="saCloseSettings()" aria-label="Close Settings">✕</button></header>
+  <div class="sa-settings-body">
+   <section class="sa-setting-card">
+    <h3>📱 Customer Display — Hotspot + QR Pairing</h3>
+    <p>ଏହି feature ଦ୍ୱାରା ଦ୍ୱିତୀୟ mobile ରେ କେବଳ Invoice Amount ଓ Payment QR ଦେଖାଯିବ। Internet ଦରକାର ନାହିଁ; ଦୁଇଟି mobile ଏକେ Hotspot/Wi-Fi network ରେ ଥିବା ଦରକାର।</p>
+    <p><b>ପ୍ରଥମେ:</b> Main mobile ରେ Hotspot ON କରନ୍ତୁ। Secondary mobile କୁ ସେହି Hotspot ରେ connect କରନ୍ତୁ। ଦୁଇଟି mobile ରେ ଏହି POS app ଖୋଲା ରଖନ୍ତୁ।</p>
+    <div id="sa-cd-status" class="sa-cd-status">⚪ Not connected • Choose Main Phone or Customer Phone</div>
+    <div class="sa-cd-actions">
+     <button class="sa-cd-btn primary" type="button" onclick="saCDCreateOffer()">📲 Main Phone — Show Pairing QR</button>
+     <button class="sa-cd-btn" type="button" onclick="saCDStartJoin()">📷 Customer Phone — Scan Pairing QR</button>
+    </div>
+    <div id="sa-cd-qr" aria-label="Pairing QR"><span style="font-size:11px;color:#666">Pairing QR will appear here</span></div>
+    <p id="sa-cd-instruction">Main phone: generate the first QR. Customer phone: scan it, then show the response QR back to the Main phone.</p>
+    <textarea id="sa-cd-code" placeholder="Manual fallback: paste the pairing code here if camera scanning is unavailable"></textarea>
+    <div class="sa-cd-actions">
+     <button class="sa-cd-btn" type="button" onclick="saCDProcessManual()">Process Pasted Code</button>
+     <button class="sa-cd-btn" type="button" onclick="saCDScanAnswer()">Main Phone — Scan Response QR</button>
+    </div>
+    <div class="sa-cd-actions">
+     <button class="sa-cd-btn" type="button" onclick="saCDOpenCustomerPreview()">Open Customer Screen Here</button>
+     <button class="sa-cd-btn danger" type="button" onclick="saCDDisconnect()">Disconnect Device</button>
+    </div>
+    <p>Pairing uses a direct WebRTC connection over the local hotspot. QR pairing is a two-way exchange: Main QR → Customer scan → Customer response QR → Main scan. The app cannot switch Android Hotspot ON automatically; please enable it in Android settings.</p>
+   </section>
+  </div>
+ </section>
+</div>
+<div id="sa-cd-camera-overlay" aria-hidden="true"><div id="sa-cd-camera-card"><b>📷 Scan Pairing QR</b><video id="sa-cd-video" playsinline muted></video><p id="sa-cd-camera-note" style="font-size:10px;color:var(--muted);margin:5px 0">Point the camera at the QR code.</p><button class="sa-cd-btn" style="width:100%" type="button" onclick="saCDStopScanner()">Close Camera</button></div></div>
+<div id="sa-customer-screen" aria-live="polite">
+ <div id="sa-customer-shop">SATRUGHAN ANNAPURNA POS</div><div id="sa-customer-caption">PLEASE PAY</div>
+ <div id="sa-customer-amount">₹ 0.00</div><div id="sa-customer-qr"><span style="color:#666;font-size:12px">Waiting for payment QR</span></div>
+ <div id="sa-customer-pay-note">Scan the QR using any UPI app</div><div id="sa-customer-link-state">Waiting for connection…</div>
+ <button type="button" class="sa-cd-btn" style="position:absolute;top:10px;right:10px;min-height:34px" onclick="saCDCloseCustomerScreen()">✕</button>
+</div>
+<script id="sa-customer-display-addon-script">
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ let pc=null,channel=null,scanStream=null,scanTimer=0,scanCallback=null,lastSent='',lastCustomerData=null,role='';
+ const status=t=>{const e=$('sa-cd-status');if(e)e.textContent=t};
+ const showSettings=()=>{$('sa-settings-overlay')?.classList.add('open');$('sa-settings-overlay')?.setAttribute('aria-hidden','false')};
+ window.saOpenSettings=showSettings;
+ window.saCloseSettings=function(){ $('sa-settings-overlay')?.classList.remove('open');$('sa-settings-overlay')?.setAttribute('aria-hidden','true');saCDStopScanner(); };
+ function renderQR(targetId,text,size){const el=$(targetId);if(!el)return;el.innerHTML='';if(!text){el.textContent='Payment QR unavailable';return;}if(typeof QRCode!=='function'){el.textContent='QR library unavailable';return;}try{new QRCode(el,{text:String(text),width:size||250,height:size||250,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.L});}catch(e){el.textContent='QR too large to render. Use the manual pairing code.';}}
+ function bytesToB64(bytes){let bin='';for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(bin);}
+ function b64ToBytes(s){const bin=atob(s);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
+ async function encodeSignal(obj){const raw=new TextEncoder().encode(JSON.stringify(obj));let bytes=raw,prefix='SAQR1J:';if(typeof CompressionStream==='function'){try{const cs=new CompressionStream('gzip'),w=cs.writable.getWriter();w.write(raw);w.close();bytes=new Uint8Array(await new Response(cs.readable).arrayBuffer());}catch(e){prefix='SAQR1:';}}else prefix='SAQR1:';return prefix+bytesToB64(bytes);}
+ async function decodeSignal(text){const v=String(text||'').trim();if(v.startsWith('SAQR1J:')){if(typeof DecompressionStream!=='function')throw new Error('This browser cannot decompress the QR code. Use manual code on a supported Chrome browser.');const bytes=b64ToBytes(v.slice(7)),ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();w.write(bytes);w.close();return JSON.parse(new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()));}if(v.startsWith('SAQR1:'))return JSON.parse(new TextDecoder().decode(b64ToBytes(v.slice(6))));throw new Error('This is not a SATRUGHAN pairing QR code.');}
+ function waitIce(p,timeout=18000){return new Promise(resolve=>{if(p.iceGatheringState==='complete')return resolve();let done=false;const finish=()=>{if(done)return;done=true;p.removeEventListener('icegatheringstatechange',check);resolve();};const check=()=>{if(p.iceGatheringState==='complete')finish();};p.addEventListener('icegatheringstatechange',check);setTimeout(finish,timeout);});}
+ function closePeer(){try{channel?.close()}catch(e){}try{pc?.close()}catch(e){}channel=null;pc=null;lastSent='';}
+ function setupPeer(){closePeer();pc=new RTCPeerConnection({iceServers:[]});pc.onconnectionstatechange=()=>{const s=pc?.connectionState;if(s==='connected'){status('🟢 Connected on local network • Customer display is live');$('sa-cd-instruction').textContent='Connected. Current POS bill amount and the existing payment QR will update automatically.';if(role==='main')sendCurrentBill(true);}else if(s==='disconnected'||s==='failed'||s==='closed'){status('🔴 Connection lost • Re-pair the devices');if(role==='customer')customerDisconnected();}};pc.ondatachannel=e=>{channel=e.channel;bindChannel();};return pc;}
+ function bindChannel(){if(!channel)return;channel.onopen=()=>{status('🟢 Connected on local hotspot');$('sa-cd-instruction').textContent='Connected. Customer screen shows only invoice amount and payment QR.';/* The WebRTC connection can become connected before its data channel opens. Send the first invoice here too, otherwise the customer phone remains blank until a later update. */if(role==='main')sendCurrentBill(true);};channel.onmessage=e=>{try{const data=JSON.parse(e.data);if(data&&data.type==='invoice')renderCustomer(data);}catch(err){}};channel.onclose=()=>{status('🔴 Customer display disconnected');customerDisconnected();};}
+ window.saCDCreateOffer=async function(){try{role='main';status('🟡 Preparing local connection…');$('sa-cd-instruction').textContent='Wait for the Main Phone pairing QR. On the customer phone, open Settings and choose Customer Phone — Scan Pairing QR.';const p=setupPeer();channel=p.createDataChannel('sa-customer-display',{ordered:true});bindChannel();const offer=await p.createOffer();await p.setLocalDescription(offer);await waitIce(p);const code=await encodeSignal({type:'offer',sdp:p.localDescription});$('sa-cd-code').value=code;renderQR('sa-cd-qr',code,260);status('🟡 Main QR ready • Waiting for Customer response QR');}catch(e){status('🔴 Pairing setup failed: '+(e.message||e));}}
+ window.saCDStartJoin=function(){role='customer';$('sa-cd-instruction').textContent='Scan the Main Phone QR. After scanning, this phone will create a response QR; show that response QR to the Main Phone.';status('🟡 Customer phone ready • Scan Main Phone QR');startScanner(async code=>{try{await acceptOffer(code)}catch(e){status('🔴 Could not join: '+(e.message||e));}});};
+ async function acceptOffer(code){const sig=await decodeSignal(code);if(sig.type!=='offer'||!sig.sdp)throw new Error('Expected Main Phone offer QR.');const p=setupPeer();p.ondatachannel=e=>{channel=e.channel;bindChannel();};await p.setRemoteDescription(new RTCSessionDescription(sig.sdp));const answer=await p.createAnswer();await p.setLocalDescription(answer);await waitIce(p);const response=await encodeSignal({type:'answer',sdp:p.localDescription});$('sa-cd-code').value=response;renderQR('sa-cd-qr',response,260);status('🟡 Response QR ready • Scan it with the Main Phone');$('sa-cd-instruction').textContent='Show this response QR to the Main Phone. The Main Phone must tap “Scan Response QR”.';}
+ window.saCDScanAnswer=function(){role='main';status('🟡 Scan the Customer Phone response QR');startScanner(async code=>{try{await acceptAnswer(code)}catch(e){status('🔴 Response QR failed: '+(e.message||e));}});};
+ async function acceptAnswer(code){const sig=await decodeSignal(code);if(sig.type!=='answer'||!sig.sdp)throw new Error('Expected Customer Phone response QR.');if(!pc)throw new Error('Create the Main Phone pairing QR first.');await pc.setRemoteDescription(new RTCSessionDescription(sig.sdp));status('🟡 Response accepted • Connecting…');}
+ window.saCDProcessManual=async function(){const code=$('sa-cd-code')?.value||'';if(!code.trim()){status('Paste a pairing code first.');return;}try{const sig=await decodeSignal(code);if(sig.type==='offer'){role='customer';await acceptOffer(code);}else if(sig.type==='answer'){role='main';await acceptAnswer(code);}else throw new Error('Unknown pairing code type.');}catch(e){status('🔴 '+(e.message||e));}};
+ async function startScanner(callback){saCDStopScanner();scanCallback=callback;const overlay=$('sa-cd-camera-overlay'),video=$('sa-cd-video');overlay?.classList.add('open');overlay?.setAttribute('aria-hidden','false');if(!navigator.mediaDevices?.getUserMedia){$('sa-cd-camera-note').textContent='Camera is unavailable. Paste the QR code into the manual field instead.';return;}if(typeof BarcodeDetector!=='function'){$('sa-cd-camera-note').textContent='QR scanning is not supported by this browser. Paste the QR code into the manual field instead.';return;}try{const detector=new BarcodeDetector({formats:['qr_code']});scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});video.srcObject=scanStream;await video.play();const scan=async()=>{if(!scanStream)return;try{const hits=await detector.detect(video);if(hits&&hits.length&&hits[0].rawValue){const found=hits[0].rawValue,cb=scanCallback;saCDStopScanner();if(cb)await cb(found);return;}}catch(e){}scanTimer=requestAnimationFrame(scan);};scan();}catch(e){$('sa-cd-camera-note').textContent='Camera permission failed: '+(e.message||e)+'. Paste the QR code manually.';}}
+ window.saCDStopScanner=function(){if(scanTimer)cancelAnimationFrame(scanTimer);scanTimer=0;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}const v=$('sa-cd-video');if(v)v.srcObject=null;$('sa-cd-camera-overlay')?.classList.remove('open');$('sa-cd-camera-overlay')?.setAttribute('aria-hidden','true');scanCallback=null;};
+ function currentInvoice(){
+  let amount=0,mode='calculator',upi='',qr=null,shop='SATRUGHAN ANNAPURNA POS';
+  const billingOpen=!!$('billing-overlay')?.classList.contains('open');
+  if(billingOpen){
+   mode='billing';
+   try{if(typeof billingTotals==='function'){const totals=billingTotals();amount=Math.max(0,Number(totals&&totals.bill)||0);}}catch(e){}
+   // Read the already-rendered payable total as a safe fallback; this does not change Billing calculations.
+   if(!(amount>0)){const shown=String($('billing-grand-total')?.textContent||'').replace(/[^0-9.\-]/g,'');const parsed=Number(shown);if(Number.isFinite(parsed)&&parsed>0)amount=parsed;}
+   try{
+    const paymentMode=String((typeof billingPaymentMode!=='undefined'?billingPaymentMode:'')||$('billing-payment-mode')?.value||'Cash');
+    upi=String(typeof getPaymentUpiId==='function'?getPaymentUpiId():'').trim();
+    if(amount>0&&upi&&typeof shouldShowInvoiceQRForPayment==='function'&&shouldShowInvoiceQRForPayment(paymentMode)&&typeof getBillingQrPayload==='function')qr=getBillingQrPayload(amount,upi,paymentMode,typeof getBillingPaymentOfferMessage==='function');
+    if(typeof getInvoiceShopName==='function')shop=String(getInvoiceShopName('billing')||shop).trim()||shop;
+   }catch(e){qr=null;}
+  }else{
+   mode='calculator';
+   try{amount=Math.max(0,Number(typeof getCurrentCalculatorAmount==='function'?getCurrentCalculatorAmount():0)||0);}catch(e){}
+   if(!(amount>0)){const shown=Number(String($('display-res')?.textContent||'').replace(/[^0-9.\-]/g,''));if(Number.isFinite(shown)&&shown>0)amount=shown;}
+   try{
+    upi=String($('upi-id')?.value||'').trim();
+    const qrEnabled=typeof getStoredInvoiceQr==='function'?getStoredInvoiceQr('calculator'):true;
+    if(qrEnabled&&amount>0&&upi&&typeof isValidUpiId==='function'&&isValidUpiId(upi)){
+     qr='upi://pay?pa='+encodeURIComponent(upi)+'&am='+amount.toFixed(2)+'&cu=INR';
+     const note=typeof getCalculatorOfferMessage==='function'?getCalculatorOfferMessage():'';
+     if(note)qr+='&tn='+encodeURIComponent(note.slice(0,120));
+    }
+    if(typeof getInvoiceShopName==='function')shop=String(getInvoiceShopName('calculator')||shop).trim()||shop;
+   }catch(e){qr=null;}
+  }
+  return {type:'invoice',source:mode,amount,qrPayload:qr,shopName:shop,updatedAt:Date.now()};
+ }
+ function sendCurrentBill(force){
+  if(role!=='main'||!channel||channel.readyState!=='open')return;
+  try{const data=currentInvoice(),raw=JSON.stringify(data);if(force||raw!==lastSent){channel.send(raw);lastSent=raw;}}
+  catch(e){status('🔴 Could not send bill data: '+(e.message||e));}
+ }
+ function renderCustomer(data){
+  if(!data||data.type!=='invoice')return;
+  lastCustomerData=data;
+  const shop=$('sa-customer-shop'),amountEl=$('sa-customer-amount'),noteEl=$('sa-customer-pay-note'),stateEl=$('sa-customer-link-state'),qrEl=$('sa-customer-qr'),screen=$('sa-customer-screen');
+  if(shop)shop.textContent=String(data.shopName||'SATRUGHAN ANNAPURNA POS').slice(0,70);
+  if(amountEl)amountEl.textContent='₹ '+(Number(data.amount)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(data.qrPayload){renderQR('sa-customer-qr',data.qrPayload,280);if(noteEl)noteEl.textContent='Scan the QR using any UPI app';}
+  else{if(qrEl)qrEl.innerHTML='<span style="color:#666;font-size:12px">Payment QR not available for this payment mode</span>';if(noteEl)noteEl.textContent='Please ask the cashier for payment instructions';}
+  if(stateEl)stateEl.textContent='Live • '+(data.source==='billing'?'Billing':'Calculator')+' amount received';
+  screen?.classList.add('open');
+ }
+ function customerDisconnected(){$('sa-customer-link-state').textContent='Connection lost • Ask cashier to reconnect';$('sa-customer-amount').textContent='—';$('sa-customer-qr').innerHTML='<span style="color:#666;font-size:12px">Disconnected</span>';}
+ window.saCDOpenCustomerPreview=function(){const d=lastCustomerData||{amount:0,qrPayload:null,shopName:'SATRUGHAN ANNAPURNA POS'};renderCustomer(d);};
+ window.saCDCloseCustomerScreen=function(){$('sa-customer-screen')?.classList.remove('open');};
+ window.saCDDisconnect=function(){closePeer();role='';lastCustomerData=null;status('⚪ Disconnected • No secondary phone connected');$('sa-cd-instruction').textContent='Enable the Main Phone hotspot and pair again when ready.';$('sa-cd-qr').innerHTML='<span style="font-size:11px;color:#666">Pairing QR will appear here</span>';customerDisconnected();$('sa-customer-screen')?.classList.remove('open');};
+ // Poll only the current bill values; this add-on does not modify billing functions or data.
+ setInterval(()=>sendCurrentBill(false),450);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('sa-cd-camera-overlay')?.classList.contains('open'))saCDStopScanner();else if($('sa-settings-overlay')?.classList.contains('open'))saCloseSettings();else if($('sa-customer-screen')?.classList.contains('open'))saCDCloseCustomerScreen();}});
 })();
 </script>
