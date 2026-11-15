@@ -3807,6 +3807,20 @@ const PRINTER_MODEL_KEY="upi-printer-model-v9";
 const PRINTER_PAPER_KEY="upi-printer-paper-v9";
 const PRINTER_DEVICE_ID_KEY="upi-printer-device-id-v1";
 let printerReconnectBusy=false,printerReconnectAttempts=0;
+let printerReconnectTimer=null,printerReconnectEnabled=true,androidPrinterConnected=false;
+function schedulePrinterReconnect(delay){
+  if(!printerReconnectEnabled||document.visibilityState==='hidden'||printerReady()||printerReconnectTimer)return;
+  const wait=Number.isFinite(delay)?delay:Math.min(30000,2000*Math.pow(2,Math.min(printerReconnectAttempts,4)));
+  printerReconnectTimer=setTimeout(async()=>{
+    printerReconnectTimer=null;
+    if(!printerReconnectEnabled||document.visibilityState==='hidden'||printerReady())return;
+    // The restore routine lives inside the device-settings closure.
+    // Call its public bridge so delayed reconnects can reach it safely.
+    if(typeof window.saRestoreSavedPrinter==='function'){
+      await window.saRestoreSavedPrinter();
+    }
+  },wait);
+}
 function detectPrinterModel(name){const n=String(name||'').toLowerCase().replace(/\s+/g,'');if(n.includes('kp306'))return 'KP306';if(n.includes('mt580p')||n.includes('mt580'))return 'MT580P';return '';}
 function defaultPaperForPrinter(model){return model==='KP306'?'80':model==='MT580P'?'58':'58';}
 function getPrinterPaperSize(model){const m=model||detectPrinterModel(btPrinter&&btPrinter.name)||localStorage.getItem(PRINTER_MODEL_KEY)||'';const d=defaultPaperForPrinter(m);try{const saved=JSON.parse(localStorage.getItem(PRINTER_PAPER_KEY)||'{}');return String(saved[m]||d)==='80'?'80':'58';}catch(e){return d;}}
@@ -3921,8 +3935,9 @@ function closePrinterPanel(){
 document.getElementById("printer-panel").addEventListener("click",e=>{if(e.target===e.currentTarget)closePrinterPanel();});
 function handlePrinterDisconnect(){
   btCharacteristic=null;btWriteMode="";
+  if(!printerReconnectEnabled)return;
   const model=currentPrinterModel();setPrinterStatus((model?model+' ':'')+'Printer disconnected • Reconnecting…');
-  if(document.visibilityState==='visible')setTimeout(()=>connectSavedBluetoothPrinter(false),1400);
+  schedulePrinterReconnect(1400);
 }
 async function findWritableCharacteristic(server){
   for(const profile of BT_PROFILES){
@@ -3969,8 +3984,11 @@ async function connectSavedBluetoothPrinter(showStatus=true){
   }finally{printerReconnectBusy=false;}
 }
 async function connectBluetoothPrinter(){
+  printerReconnectEnabled=true;
+  if(printerReconnectTimer){clearTimeout(printerReconnectTimer);printerReconnectTimer=null;}
   if(window.AndroidPrinter && typeof window.AndroidPrinter.connect==="function"){
-    try{const ok=await Promise.resolve(window.AndroidPrinter.connect());if(ok!==false){setPrinterStatus("Android printer connected","connected");return;}}catch(e){}
+    try{const ok=await Promise.resolve(window.AndroidPrinter.connect());if(ok!==false){androidPrinterConnected=true;setPrinterStatus("Android printer connected","connected");return;}
+      androidPrinterConnected=false;}catch(e){}
   }
   if(!navigator.bluetooth){setPrinterStatus("Bluetooth is not available in this browser","error");return;}
   try{
@@ -3983,11 +4001,14 @@ async function connectBluetoothPrinter(){
   }catch(err){btPrinter=null;btCharacteristic=null;btWriteMode="";setPrinterStatus("Connection failed: "+(err.message||"Try again"),"error");}
 }
 async function disconnectBluetoothPrinter(){
+  printerReconnectEnabled=false;
+  if(printerReconnectTimer){clearTimeout(printerReconnectTimer);printerReconnectTimer=null;}
   try{if(window.AndroidPrinter&&typeof window.AndroidPrinter.disconnect==="function")window.AndroidPrinter.disconnect();}catch(e){}
+  androidPrinterConnected=false;
   try{if(btPrinter&&btPrinter.gatt&&btPrinter.gatt.connected)btPrinter.gatt.disconnect();}catch(e){}
   btPrinter=null;btCharacteristic=null;btWriteMode="";setPrinterStatus("Printer disconnected");
 }
-function printerReady(){return !!(btPrinter&&btPrinter.gatt&&btPrinter.gatt.connected&&btCharacteristic)||(window.AndroidPrinter&&typeof window.AndroidPrinter.print==="function");}
+function printerReady(){return !!(btPrinter&&btPrinter.gatt&&btPrinter.gatt.connected&&btCharacteristic)||!!(androidPrinterConnected&&window.AndroidPrinter&&typeof window.AndroidPrinter.print==="function");}
 function utf8(s){return new TextEncoder().encode(s);}
 function concatBytes(...arrs){const n=arrs.reduce((a,b)=>a+b.length,0);const out=new Uint8Array(n);let p=0;for(const a of arrs){out.set(a,p);p+=a.length;}return out;}
 async function writeBluetooth(data){
@@ -14420,7 +14441,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  };
  window.saRetryDefaultPrinter=async function(){
   if(window.AndroidPrinter&&typeof window.AndroidPrinter.connect==='function'){
-   try{const ok=await Promise.resolve(window.AndroidPrinter.connect());if(ok!==false){setPrinterStatus('Android printer connected','connected');updateDeviceSettingsStatus();return;}}catch(e){}
+   try{const ok=await Promise.resolve(window.AndroidPrinter.connect());if(ok!==false){androidPrinterConnected=true;setPrinterStatus('Android printer connected','connected');updateDeviceSettingsStatus();return;}androidPrinterConnected=false;}catch(e){androidPrinterConnected=false;}
   }
   const ok=await connectSavedBluetoothPrinter(true);if(!ok&&!localStorage.getItem('upi-printer-device-id-v1'))setPrinterStatus('No saved printer • Tap Connect / Change Printer');
   updateDeviceSettingsStatus();
@@ -14556,7 +14577,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  let printerRestoreRun=false;
  const waitForPrinterRetry=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  async function restoreSavedPrinter(){
-  if(printerReady()||document.visibilityState==='hidden')return printerReady();
+  if(!printerReconnectEnabled||printerReady()||document.visibilityState==='hidden')return printerReady();
   if(printerRestoreRun)return false;
   printerRestoreRun=true;
   try{
@@ -14567,22 +14588,28 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
      try{
       const result=await Promise.resolve(window.AndroidPrinter.connect());
       connected=result!==false;
-      if(connected)setPrinterStatus('Android printer connected','connected');
+      androidPrinterConnected=connected;
+      if(connected){setPrinterStatus('Android printer connected','connected');printerReconnectAttempts=0;}
      }catch(e){}
     }
-    if(!connected)connected=await connectSavedBluetoothPrinter(false);
+    if(!connected){androidPrinterConnected=false;connected=await connectSavedBluetoothPrinter(false);}
     if(connected||printerReady())break;
     if(attempt<2)await waitForPrinterRetry(1500*(attempt+1));
    }
-   if(!printerReady()&&localStorage.getItem('upi-printer-device-id-v1')){
-    setPrinterStatus('Saved printer not reachable • Keep Bluetooth ON and tap Reconnect Printer','error');
-   }
+   if(!printerReady()&&(localStorage.getItem('upi-printer-device-id-v1')||window.AndroidPrinter)){
+    printerReconnectAttempts++;
+    setPrinterStatus('Printer not reachable • Auto retrying ('+printerReconnectAttempts+')','error');
+    schedulePrinterReconnect(Math.min(30000,2000*Math.pow(2,Math.min(printerReconnectAttempts-1,4))));
+   }else if(printerReady()){printerReconnectAttempts=0;}
    return printerReady();
   }finally{
    printerRestoreRun=false;
    if(window.updateDeviceSettingsStatus)window.updateDeviceSettingsStatus();
   }
  }
+ // Expose the in-scope restore routine to the global reconnect timer.
+ window.saRestoreSavedPrinter=restoreSavedPrinter;
+
  async function restoreDeviceConnections(){
   if(document.visibilityState==='hidden')return;
   await restoreSavedPrinter();
