@@ -3786,7 +3786,10 @@ function editHistory(id){
         <button type="button" id="printer-paper-80" class="printer-paper-btn" onclick="setPrinterPaperSize('80')">🧾 3-INCH<br><small>80mm</small></button>
       </div>
       <div id="printer-paper-info" class="printer-paper-info">58mm • 32-column invoice</div>
-      <div class="printer-row"><button class="printer-action" onclick="connectBluetoothPrinter()">Connect Printer</button><button class="printer-action secondary" onclick="disconnectBluetoothPrinter()">Disconnect</button></div>
+      <div class="printer-row"><button class="printer-action" onclick="connectBluetoothPrinter()">Scan / Add Bluetooth Printer</button><button class="printer-action secondary" onclick="disconnectBluetoothPrinter()">Disconnect</button></div>
+      <div class="printer-paper-title">Paired Bluetooth Devices</div>
+      <div id="printer-known-devices" style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:8px;font-size:12px;color:var(--text)"><div style="color:var(--muted)">Loading permitted Bluetooth devices…</div></div>
+      <div class="printer-row"><button class="printer-action secondary" type="button" onclick="refreshKnownBluetoothPrinters()">↻ Refresh Devices</button></div>
       <div class="printer-row"><button class="printer-action secondary" onclick="testBluetoothPrinter()">Test Print</button><button class="printer-action" onclick="printCurrentPayment()">🖨️ One-Tap Print</button></div>
       <div class="invoice-option"><span>QR Code on Invoice</span><label class="invoice-toggle"><input id="invoice-qr-toggle" type="checkbox" checked onchange="toggleInvoiceQR(this.checked)"><span class="invoice-slider"></span></label></div>
       <div id="printer-paper-note" class="printer-note"><b>58mm format:</b> 32-column ESC/POS receipt with amount, UPI ID, date/time and a QR code.<br>For Bluetooth Classic/SPP printers, a normal HTML page cannot directly open the printer&apos;s serial Bluetooth channel. This version supports compatible BLE/GATT printers and an optional Android printer bridge when the page is packaged inside an Android app.</div>
@@ -3907,6 +3910,7 @@ function openPrinterPanel(fromPOSPreview=false){
   else if(navigator.bluetooth) setPrinterMode("Web Bluetooth / BLE available");
   else setPrinterMode("Browser Bluetooth unavailable");
   syncPrinterPaperSelector();
+  if(typeof window.refreshKnownBluetoothPrinters==='function')window.refreshKnownBluetoothPrinters();
   if(printerReady()) setPrinterStatus("Connected: "+(btPrinter.name||"Bluetooth printer"),"connected");
 }
 function closePrinterPanel(){
@@ -3965,11 +3969,18 @@ async function attachBluetoothPrinter(device){
   const paper=getPrinterPaperSize(model);
   setPrinterStatus("Connected: "+(device.name||"Bluetooth printer")+" • "+(paper==='80'?'80mm / 3-inch':'58mm / 2-inch'),"connected");
   syncPrinterPaperSelector();
+  if(typeof refreshKnownBluetoothPrinters==='function')refreshKnownBluetoothPrinters();
   printerReconnectAttempts=0;
   return true;
 }
 async function connectSavedBluetoothPrinter(showStatus=true){
   if(printerReconnectBusy||printerReady())return printerReady();
+  if(window.AndroidPrinter&&typeof window.AndroidPrinter.connect==="function"){
+    const saved=localStorage.getItem(PRINTER_DEVICE_ID_KEY)||"";
+    if(saved){
+      try{const ok=window.AndroidPrinter.connect(saved);if(ok!==false){androidPrinterConnected=true;btPrinter={name:localStorage.getItem(PRINTER_NAME_KEY)||"Bluetooth printer"};if(showStatus)setPrinterStatus("Connected: "+btPrinter.name+" • MAC "+saved,"connected");return true;}}catch(e){}
+    }
+  }
   if(!navigator.bluetooth||typeof navigator.bluetooth.getDevices!=="function")return false;
   const savedId=localStorage.getItem(PRINTER_DEVICE_ID_KEY);
   const savedName=localStorage.getItem(PRINTER_NAME_KEY)||"";
@@ -3996,6 +4007,10 @@ async function connectSavedBluetoothPrinter(showStatus=true){
 async function connectBluetoothPrinter(){
   printerReconnectEnabled=true;
   if(printerReconnectTimer){clearTimeout(printerReconnectTimer);printerReconnectTimer=null;}
+  if(window.AndroidPrinter && typeof window.AndroidPrinter.scan==="function"){
+    try{window.AndroidPrinter.scan();setPrinterStatus("Choose a paired Android Bluetooth printer…");return;}
+    catch(e){setPrinterStatus("Android Bluetooth error: "+(e.message||e),"error");return;}
+  }
   if(window.AndroidPrinter && typeof window.AndroidPrinter.connect==="function"){
     try{const ok=await Promise.resolve(window.AndroidPrinter.connect());if(ok!==false){androidPrinterConnected=true;setPrinterStatus("Android printer connected","connected");return;}
       androidPrinterConnected=false;}catch(e){}
@@ -4014,6 +4029,97 @@ async function connectBluetoothPrinter(){
     updateDeviceSettingsStatus();
   }catch(err){btPrinter=null;btCharacteristic=null;btWriteMode="";setPrinterStatus("Connection failed: "+(err.message||"Try again"),"error");}
 }
+async function refreshKnownBluetoothPrinters(){
+  const box=document.getElementById('printer-known-devices');if(!box)return;
+  if(window.AndroidPrinter && typeof window.AndroidPrinter.getPairedDevices==="function"){
+    try{
+      const devices=JSON.parse(window.AndroidPrinter.getPairedDevices()||"[]");
+      const saved=localStorage.getItem(PRINTER_DEVICE_ID_KEY)||"";
+      if(!devices.length){box.textContent="No paired Bluetooth devices found. Pair your printer in Android Bluetooth Settings first.";return;}
+      box.innerHTML="";
+      devices.forEach(device=>{
+        const row=document.createElement("div");row.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)";
+        const info=document.createElement("div");info.style.cssText="min-width:0;flex:1";
+        const name=document.createElement("div");name.style.cssText="font-weight:800;overflow-wrap:anywhere";name.textContent=device.name||"Bluetooth printer";
+        const meta=document.createElement("div");meta.style.cssText="font-size:10px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere";meta.textContent=(device.address||"MAC unavailable")+(device.address===saved?" • CURRENT DEFAULT":"");
+        info.append(name,meta);
+        const actions=document.createElement("div");actions.style.cssText="display:flex;flex-direction:column;gap:5px;flex:0 0 auto";
+        const def=document.createElement("button");def.type="button";def.className="printer-action";def.style.cssText="padding:7px 9px;min-width:104px";def.textContent=device.address===saved?"Default ✓":"Set Default";
+        def.onclick=()=>setKnownBluetoothPrinterDefault(device);
+        const con=document.createElement("button");con.type="button";con.className="printer-action secondary";con.style.cssText="padding:7px 9px;min-width:104px";con.textContent="Connect";
+        con.onclick=()=>connectAndroidPrinterDevice(device);
+        actions.append(def,con);row.append(info,actions);box.append(row);
+      });
+      return;
+    }catch(e){box.textContent="Could not read Android paired devices: "+(e.message||e);return;}
+  }
+  if(!navigator.bluetooth||typeof navigator.bluetooth.getDevices!=='function'){
+    box.innerHTML='<div style="color:var(--muted);line-height:1.5">ଏହି browser ପୂର୍ବରୁ permission ଦିଆଯାଇଥିବା device list ଦେଖାଇପାରୁନାହିଁ। Scan / Add Bluetooth Printer ଦବାଇ printer ବାଛନ୍ତୁ। Browser ସାଧାରଣତଃ hardware MAC address ଦେଉନାହିଁ; Bluetooth Classic printer ପାଇଁ Android bridge ଦରକାର ହୋଇପାରେ।</div>';return;
+  }
+  box.textContent='Checking paired / permitted devices…';
+  try{
+    const devices=await navigator.bluetooth.getDevices();
+    const savedId=localStorage.getItem(PRINTER_DEVICE_ID_KEY)||'';
+    if(!devices.length){box.innerHTML='<div style="color:var(--muted);line-height:1.5">କୌଣସି permitted Bluetooth printer ମିଳିଲା ନାହିଁ। Scan / Add Bluetooth Printer ଦବାଇ device ବାଛନ୍ତୁ।</div>';return;}
+    box.innerHTML='';
+    devices.forEach(device=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)';
+      const info=document.createElement('div');info.style.cssText='min-width:0;flex:1';
+      const name=document.createElement('div');name.style.cssText='font-weight:800;overflow-wrap:anywhere';name.textContent=device.name||'Bluetooth printer';
+      const meta=document.createElement('div');meta.style.cssText='font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5';
+      const isDefault=device.id===savedId;
+      const mac=device.macAddress||device.address||device.bluetoothAddress||device.deviceAddress||'';
+      const ip=device.ipAddress||device.ip||'';
+      const details=[];if(mac)details.push('MAC: '+mac);if(ip)details.push('IP: '+ip);
+      details.push('Device ID: '+(device.id||'Not exposed'));
+      meta.textContent=(isDefault?'★ CURRENT DEFAULT • ':'')+details.join(' • ')+(mac||ip?'':' • Hardware MAC/IP browser ଦ୍ୱାରା hidden');
+      info.append(name,meta);
+      const btn=document.createElement('button');btn.type='button';btn.className='printer-action';btn.style.cssText='flex:0 0 auto;min-width:112px;padding:0 10px';
+      btn.textContent=isDefault?'Default ✓':'Set Default';btn.disabled=false;
+      btn.addEventListener('click',()=>setKnownBluetoothPrinterDefault(device));
+      row.append(info,btn);box.append(row);
+    });
+  }catch(err){box.textContent='Could not read permitted devices. Tap “Scan / Add Bluetooth Printer” to select again.';}
+}
+async function setKnownBluetoothPrinterDefault(device){
+  const native=!!(window.AndroidPrinter&&device&&device.address);
+  const id=native?device.address:(device&&device.id);
+  if(!id){setPrinterStatus("Cannot set default: printer identifier is unavailable","error");return false;}
+  try{
+    localStorage.setItem(PRINTER_DEVICE_ID_KEY,id);
+    localStorage.setItem(PRINTER_NAME_KEY,device.name||"Bluetooth printer");
+    localStorage.setItem('upi-printer-device-profile-v1',JSON.stringify({name:device.name||"Bluetooth printer",deviceId:id,identifierType:native?'Bluetooth MAC address':'Web Bluetooth device.id',savedAt:new Date().toISOString()}));
+    if(native&&typeof window.AndroidPrinter.setDefault==="function")window.AndroidPrinter.setDefault(id,device.name||"Bluetooth printer");
+    await refreshKnownBluetoothPrinters();
+    setPrinterStatus("Default printer saved: "+(device.name||"Bluetooth printer")+". Connect it to print.","connected");
+    return true;
+  }catch(err){setPrinterStatus("Could not save default printer: "+(err.message||err),"error");return false;}
+}
+async function connectAndroidPrinterDevice(device){
+  if(!window.AndroidPrinter||!device||!device.address)return false;
+  try{
+    setPrinterStatus("Connecting to "+(device.name||"Bluetooth printer")+"…");
+    const ok=window.AndroidPrinter.connect(device.address);
+    if(ok===false)throw new Error("Android could not connect. Check printer power and pairing.");
+    androidPrinterConnected=true;btPrinter={name:device.name||"Bluetooth printer"};
+    localStorage.setItem(PRINTER_DEVICE_ID_KEY,device.address);
+    localStorage.setItem(PRINTER_NAME_KEY,device.name||"Bluetooth printer");
+    localStorage.setItem('upi-printer-device-profile-v1',JSON.stringify({name:device.name||"Bluetooth printer",deviceId:device.address,identifierType:'Bluetooth MAC address',savedAt:new Date().toISOString()}));
+    const model=detectPrinterModel(device.name);if(model)localStorage.setItem(PRINTER_MODEL_KEY,model);
+    setPrinterStatus("Connected: "+(device.name||"Bluetooth printer")+" • MAC "+device.address,"connected");
+    syncPrinterPaperSelector();await refreshKnownBluetoothPrinters();return true;
+  }catch(e){androidPrinterConnected=false;setPrinterStatus("Connection failed: "+(e.message||e),"error");return false;}
+}
+window.onAndroidPrinterConnected=function(name,address){
+  androidPrinterConnected=true;btPrinter={name:name||"Bluetooth printer"};
+  if(address){localStorage.setItem(PRINTER_DEVICE_ID_KEY,address);localStorage.setItem(PRINTER_NAME_KEY,name||"Bluetooth printer");}
+  setPrinterStatus("Connected: "+(name||"Bluetooth printer")+(address?" • MAC "+address:""),"connected");
+  syncPrinterPaperSelector();refreshKnownBluetoothPrinters();
+};
+window.refreshKnownBluetoothPrinters=refreshKnownBluetoothPrinters;
+window.setKnownBluetoothPrinterDefault=setKnownBluetoothPrinterDefault;
+
 async function disconnectBluetoothPrinter(){
   printerReconnectEnabled=false;
   if(printerReconnectTimer){clearTimeout(printerReconnectTimer);printerReconnectTimer=null;}
@@ -4028,7 +4134,7 @@ function concatBytes(...arrs){const n=arrs.reduce((a,b)=>a+b.length,0);const out
 async function writeBluetooth(data){
   if(window.AndroidPrinter&&typeof window.AndroidPrinter.print==="function"){
     const base64=btoa(String.fromCharCode(...data));
-    const r=window.AndroidPrinter.print(base64);if(r&&typeof r.then==="function")await r;return;
+    const r=window.AndroidPrinter.print(base64);if(r===false)throw new Error("Android Bluetooth print failed. Check printer connection.");if(r&&typeof r.then==="function")await r;return;
   }
   if(!btCharacteristic)throw new Error("Connect a printer first");
   /* KP306 / common 3-inch BLE printers can silently drop tail data when
@@ -11369,9 +11475,9 @@ function ensureBillingLoyaltyBox(){const sel=document.getElementById('billing-pa
 window.updateBillingLoyalty=function(){ensureBillingLoyaltyBox();const box=document.getElementById('billing-loyalty-box'),pid=String(document.getElementById('billing-party-select')?.value||'');const m=memberForParty(pid);if(!box)return;box.classList.toggle('show',!!m);if(m){document.getElementById('billing-loyalty-points').textContent='⭐ '+balance(m.id)+' Points';document.getElementById('billing-loyalty-tier').textContent=tier(balance(m.id))+' • Member '+m.memberNo;const ae=document.getElementById('billing-loyalty-applied');if(ae)ae.textContent='Applied: '+(typeof billingTotals==='function'?(Number(billingTotals().loyaltyRedeemPoints)||0):0)+' pts'}else{document.getElementById('billing-loyalty-points').textContent='⭐ 0 Points';document.getElementById('billing-loyalty-tier').textContent='No Loyalty Account';const ae=document.getElementById('billing-loyalty-applied');if(ae)ae.textContent='Applied: 0 pts'}};
 window.openBillingLoyaltyRedeem=function(){const pid=String(document.getElementById('billing-party-select')?.value||''),m=memberForParty(pid);if(!m){alert('Select a Party with a Loyalty account first.');return}openLoyaltyRedeem(m.id)};
 // Inject the new Home card without editing the existing Home markup.
-function injectHome(){const sec=document.querySelector('#sa-home .sa-grid,#sa-home section');if(!sec||document.getElementById('sa-loyalty-home-card'))return;const b=document.createElement('button');b.id='sa-loyalty-home-card';b.className='sa-card sa-loyalty-home-card';b.innerHTML='<span class="sa-num">13</span><span class="sa-icon">⭐</span><span><b class="sa-card-title">Loyalty</b><small class="sa-card-sub">Members • Points • Redeem • Settings</small></span><span class="sa-arrow">›</span>';b.onclick=()=>openLoyalty();sec.appendChild(b)}
+function injectHome(){const sec=document.querySelector('#sa-home .sa-grid');if(!sec)return;let b=document.getElementById('sa-loyalty-home-card');if(!b){b=document.createElement('button');b.id='sa-loyalty-home-card';b.className='sa-card sa-loyalty-home-card';b.innerHTML='<span class="sa-num">14</span><span class="sa-icon">⭐</span><span><b class="sa-card-title">Loyalty</b><small class="sa-card-sub">Members • Points • Redeem • Settings</small></span><span class="sa-arrow">›</span>';b.onclick=()=>openLoyalty()}if(b.parentElement!==sec||sec.lastElementChild!==b)sec.appendChild(b)}
 function patchBillingSelector(){const s=document.getElementById('billing-party-select');if(!s||s.dataset.loyaltyBound==='1')return;s.dataset.loyaltyBound='1';s.addEventListener('change',()=>setTimeout(updateBillingLoyalty,0));setTimeout(updateBillingLoyalty,0)}
-function init(){if(!localStorage.getItem(K.settings))write(K.settings,defaults);injectHome();patchBillingSelector();try{const migrationKey='LOYALTY_BALANCE_SYNC_V2_DONE';if(localStorage.getItem(migrationKey)!=='1'){write(K.seen,{});localStorage.setItem(migrationKey,'1')}}catch(e){}setInterval(()=>{patchBillingSelector();updateBillingLoyalty();syncCurrentHistory()},500);setTimeout(syncCurrentHistory,800)}
+function init(){if(!localStorage.getItem(K.settings))write(K.settings,defaults);injectHome();patchBillingSelector();try{const migrationKey='LOYALTY_BALANCE_SYNC_V2_DONE';if(localStorage.getItem(migrationKey)!=='1'){write(K.seen,{});localStorage.setItem(migrationKey,'1')}}catch(e){}setInterval(()=>{if(document.visibilityState==='hidden')return;patchBillingSelector();updateBillingLoyalty();syncCurrentHistory()},500);setTimeout(syncCurrentHistory,800)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
@@ -11759,7 +11865,7 @@ const oldUpdate=window.updateBillingLoyalty;window.updateBillingLoyalty=function
 const oldStudioGet=window.invoiceStudioGet;if(oldStudioGet)window.invoiceStudioGet=function(){const st=oldStudioGet.apply(this,arguments);if(typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='billing')st.loyaltyPoints=enabled();return st};
 const oldPrepare=window.prepareCustomizedInvoice;if(oldPrepare)window.prepareCustomizedInvoice=function(){const x=oldPrepare.apply(this,arguments);if(x){/* Keep the invoice's own saved/calculated points snapshot. Do not replace historical invoice points with the currently open billing cart. */if(x.loyaltyEarnedPoints==null){const d=billData();x.loyaltyEarnedPoints=calcPoints(d.amount,d.mrp,d.discount)}x.loyaltyDisplay=enabled()}return x};
 const oldBuild=window.buildPhysicalInvoiceText;if(oldBuild)window.buildPhysicalInvoiceText=function(x){if(x&&typeof x==='object'){x={...x,loyaltyEarnedPoints:Number(x.loyaltyEarnedPoints!=null?x.loyaltyEarnedPoints:calcPoints(x.billTotal,x.mrpTotal,x.discount))||0}}return oldBuild.call(this,x)};
-function init(){refreshAll();setInterval(refreshAll,300)}
+function init(){refreshAll();setInterval(()=>{if(document.visibilityState!=='hidden')refreshAll()},300)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
@@ -11958,7 +12064,7 @@ button:disabled{
   const oldUpdate=window.updateBillingLoyalty;
   if(typeof oldUpdate==='function')window.updateBillingLoyalty=function(){const r=oldUpdate.apply(this,arguments);setTimeout(applyWalkInState,0);return r;};
   setTimeout(applyWalkInState,300);
-  setInterval(applyWalkInState,1000);
+  setInterval(()=>{if(document.visibilityState!=='hidden')applyWalkInState()},1000);
 })();
 </script>
 <style id="loyalty-master-toggle-ui-v1">
@@ -11990,7 +12096,7 @@ const oldSaveSettings=window.saveLoyaltySettings;if(oldSaveSettings)window.saveL
 const oldNew=window.openNewParty;if(oldNew)window.openNewParty=function(){oldNew.apply(this,arguments);setTimeout(refresh,0)};
 const oldEdit=window.openEditParty;if(oldEdit)window.openEditParty=function(p){oldEdit.apply(this,arguments);setTimeout(refresh,0)};
 const oldSaveParty=window.savePartyForm;if(oldSaveParty)window.savePartyForm=function(){oldSaveParty.apply(this,arguments);setTimeout(function(){try{if(typeof updateBillingLoyalty==='function')updateBillingLoyalty()}catch(e){}refresh()},100)};
-function init(){const s=getS();if(s.enabled===undefined){s.enabled=true;s.earnEnabled=true;s.redeemEnabled=true;putS(s)}refresh();setInterval(refresh,700)}
+function init(){const s=getS();if(s.enabled===undefined){s.enabled=true;s.earnEnabled=true;s.redeemEnabled=true;putS(s)}refresh();setInterval(()=>{if(document.visibilityState!=='hidden')refresh()},700)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
@@ -14450,6 +14556,30 @@ body.dark:not(.home-mode) .app-container > .display-container .result-preview{
  <section id="sa-settings-window" role="dialog" aria-modal="true" aria-labelledby="sa-settings-title">
   <header class="sa-settings-head"><div><b id="sa-settings-title">⚙️ Settings</b><small>SATRUGHAN ANNAPURNA POS</small></div><button class="sa-settings-close" type="button" onclick="saCloseSettings()" aria-label="Close Settings">✕</button></header>
   <div class="sa-settings-body">
+   <section class="sa-setting-card" id="sa-backup-reminder-card">
+    <h3>🔔 Backup Reminder</h3>
+    <p>ନିଜ ସୁବିଧା ଅନୁସାରେ Backup ମନେ ପକାଇବାର ସମୟ ଧାର୍ଯ୍ୟ କରନ୍ତୁ।</p>
+    <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;font-weight:800;font-size:12px">
+     <span>Backup Reminder ON/OFF</span><input id="sa-backup-reminder-enabled" type="checkbox" style="width:22px;height:22px;accent-color:var(--blue)">
+    </label>
+    <div class="sa-cd-actions" style="grid-template-columns:1fr 1fr">
+     <label style="font-size:11px;font-weight:800">Repeat
+      <select id="sa-backup-reminder-frequency" style="display:block;width:100%;height:40px;margin-top:5px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);padding:0 8px"><option value="daily">Every day</option><option value="weekly">Every week</option></select>
+     </label>
+     <label id="sa-backup-reminder-weekday-wrap" style="font-size:11px;font-weight:800">Day
+      <select id="sa-backup-reminder-weekday" style="display:block;width:100%;height:40px;margin-top:5px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);padding:0 8px"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select>
+     </label>
+    </div>
+    <label style="display:block;font-size:11px;font-weight:800;margin-top:9px">Reminder time
+     <input id="sa-backup-reminder-time" type="time" value="20:00" style="display:block;width:100%;height:42px;margin-top:5px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);padding:0 10px">
+    </label>
+    <div id="sa-backup-reminder-status" class="sa-cd-status" style="margin-top:9px">Reminder is OFF</div>
+    <div class="sa-cd-actions">
+     <button class="sa-cd-btn primary" type="button" onclick="saSaveBackupReminderSettings()">💾 Save Reminder</button>
+     <button class="sa-cd-btn" type="button" onclick="saTestBackupReminder()">🔔 Test Reminder</button>
+    </div>
+    <p>Reminder notification app ଖୋଲା ଥିବାବେଳେ କିମ୍ବା ପୁଣି ଖୋଲିଲେ ଦେଖାଯିବ। Browser/Android background restriction ଯୋଗୁଁ app ସମ୍ପୂର୍ଣ୍ଣ ବନ୍ଦ ଥିଲେ ସମୟମତେ notification ନିଶ୍ଚିତ ନୁହେଁ।</p>
+   </section>
    <section class="sa-setting-card">
     <h3>🔌 Device Settings — Default Printer</h3>
     <p>ପ୍ରଥମ ଥର Printer connect କରିଲେ ସେହି device Default Printer ଭାବରେ save ହେବ। App ପୁଣି ଖୋଲିଲେ saved printer କୁ auto-connect କରିବାକୁ ଚେଷ୍ଟା କରିବ।</p>
@@ -14711,7 +14841,32 @@ body.dark:not(.home-mode) .app-container > .display-container .result-preview{
   if(document.visibilityState==='visible'&&!printerReady())setTimeout(restoreDeviceConnections,500);
  });
  // Poll only the current bill values; this add-on does not modify billing functions or data.
- setInterval(()=>sendCurrentBill(false),450);
+ setInterval(()=>{if(document.visibilityState!=='hidden')sendCurrentBill(false)},450);
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('sa-cd-camera-overlay')?.classList.contains('open'))saCDStopScanner();else if($('sa-settings-overlay')?.classList.contains('open'))saCloseSettings();else if($('sa-customer-screen')?.classList.contains('open'))saCDCloseCustomerScreen();}});
 })();
 </script>
+
+<script id="sa-user-backup-reminder-addon">
+(function(){
+ 'use strict';
+ const KEY='sa-user-backup-reminder-v1';
+ const $=id=>document.getElementById(id);
+ const defaults={enabled:false,frequency:'daily',weekday:1,time:'20:00'};
+ function read(){try{return {...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch(_){return {...defaults}}}
+ function write(v){localStorage.setItem(KEY,JSON.stringify(v))}
+ function status(t){const e=$('sa-backup-reminder-status');if(e)e.textContent=t}
+ function syncWeekday(){const f=$('sa-backup-reminder-frequency');const w=$('sa-backup-reminder-weekday-wrap');if(w&&f)w.style.display=f.value==='weekly'?'block':'none'}
+ function loadUI(){const v=read();if($('sa-backup-reminder-enabled'))$('sa-backup-reminder-enabled').checked=!!v.enabled;if($('sa-backup-reminder-frequency'))$('sa-backup-reminder-frequency').value=v.frequency;if($('sa-backup-reminder-weekday'))$('sa-backup-reminder-weekday').value=String(v.weekday);if($('sa-backup-reminder-time'))$('sa-backup-reminder-time').value=v.time;syncWeekday();status(v.enabled?'Reminder ON · '+(v.frequency==='daily'?'Daily': 'Every '+['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][Number(v.weekday)])+' at '+v.time:'Reminder is OFF')}
+ function currentSettings(){return {enabled:!!$('sa-backup-reminder-enabled')?.checked,frequency:$('sa-backup-reminder-frequency')?.value||'daily',weekday:Number($('sa-backup-reminder-weekday')?.value??1),time:$('sa-backup-reminder-time')?.value||'20:00'}}
+ window.saSaveBackupReminderSettings=async function(){const v=currentSettings();if(v.enabled&&'Notification'in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch(_){}}write(v);loadUI();checkDue(true);};
+ function dayKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+ function dueKey(now,v){const [hh,mm]=v.time.split(':').map(Number);if(now.getHours()<hh||(now.getHours()===hh&&now.getMinutes()<mm))return null;if(v.frequency==='weekly'&&now.getDay()!==Number(v.weekday))return null;return v.frequency==='weekly'?'week-'+dayKey(new Date(now.getFullYear(),now.getMonth(),now.getDate()-((now.getDay()-Number(v.weekday)+7)%7))):'day-'+dayKey(now)}
+ function showReminder(){const title='UPI POS Backup Reminder',body='ଆଜିର POS data ର Backup କରନ୍ତୁ। Backup Now ଖୋଲିବାକୁ ଟ୍ୟାପ୍ କରନ୍ତୁ।';if('Notification'in window&&Notification.permission==='granted'){try{const n=new Notification(title,{body,tag:'upi-pos-backup-reminder'});n.onclick=()=>{window.focus();if(typeof window.openCloudBackupWindow==='function')window.openCloudBackupWindow();n.close()};return}catch(_){}}alert(title+'\n\n'+body);if(typeof window.openCloudBackupWindow==='function'&&confirm('Cloud Backup window ଖୋଲିବେ କି?'))window.openCloudBackupWindow()}
+ function checkDue(force){const v=read();if(!v.enabled)return;const now=new Date(),k=dueKey(now,v);if(!k)return;const firedKey=KEY+'-last-fired';if(localStorage.getItem(firedKey)===k)return;localStorage.setItem(firedKey,k);showReminder()}
+ window.saTestBackupReminder=function(){showReminder()};
+ document.addEventListener('DOMContentLoaded',()=>{loadUI();$('sa-backup-reminder-frequency')?.addEventListener('change',syncWeekday);});
+ const originalOpen=window.saOpenSettings;window.saOpenSettings=function(){if(typeof originalOpen==='function')originalOpen();loadUI()};
+ window.addEventListener('load',()=>{loadUI();checkDue(false)});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkDue(false)});setInterval(()=>{if(document.visibilityState==='visible')checkDue(false)},30000);
+})();
+</script>
+
