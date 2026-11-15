@@ -3970,31 +3970,23 @@ async function attachBluetoothPrinter(device){
 }
 async function connectSavedBluetoothPrinter(showStatus=true){
   if(printerReconnectBusy||printerReady())return printerReady();
-  if(!navigator.bluetooth||typeof navigator.bluetooth.getDevices!=="function"){
-    if(showStatus)setPrinterStatus("This app/browser cannot restore saved BLE devices automatically","error");
-    return false;
-  }
+  if(!navigator.bluetooth||typeof navigator.bluetooth.getDevices!=="function")return false;
   const savedId=localStorage.getItem(PRINTER_DEVICE_ID_KEY);
   const savedName=localStorage.getItem(PRINTER_NAME_KEY)||"";
   if(!savedId&&!savedName)return false;
   printerReconnectBusy=true;
   try{
     const devices=await navigator.bluetooth.getDevices();
-    // Prefer the exact saved Web-Bluetooth ID. If the browser regenerated the
-    // origin-scoped ID, accept a name match only when it is unambiguous.
     let device=devices.find(d=>d.id===savedId);
+    // Browser-granted IDs are origin-specific. Recover by name only when unique.
     if(!device&&savedName){
-      const matches=devices.filter(d=>String(d.name||"").trim()===String(savedName).trim());
-      if(matches.length===1){
-        device=matches[0];
-        localStorage.setItem(PRINTER_DEVICE_ID_KEY,device.id);
-        try{localStorage.setItem('upi-printer-device-profile-v1',JSON.stringify({name:device.name||savedName,deviceId:device.id,identifierType:'Web Bluetooth device.id',savedAt:new Date().toISOString()}));}catch(e){}
-      }
+      const matches=devices.filter(d=>String(d.name||"").trim().toLowerCase()===savedName.trim().toLowerCase());
+      if(matches.length===1){device=matches[0];localStorage.setItem(PRINTER_DEVICE_ID_KEY,device.id);}
     }
-    if(!device){if(showStatus)setPrinterStatus("Saved printer permission not found • Tap Connect Printer once to pair again","error");return false;}
-    if(showStatus)setPrinterStatus("Reconnecting to "+(device.name||savedName||"default printer")+"…");
+    if(!device){if(showStatus)setPrinterStatus("Saved printer permission unavailable • Connect MT580P once again","error");return false;}
+    if(showStatus)setPrinterStatus("Reconnecting to "+(device.name||savedName||"saved printer")+"…");
     await attachBluetoothPrinter(device);
-    return true;
+    return printerReady();
   }catch(err){
     btPrinter=null;btCharacteristic=null;btWriteMode="";
     if(showStatus)setPrinterStatus("Printer reconnect pending • "+(err.message||"Retrying"));
@@ -14663,18 +14655,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(pc&&pc.connectionState==='disconnected')secondaryConnectionState('disconnected');
   setTimeout(restoreDeviceConnections,700);
  });
- // App/PWA cold-start recovery: wait for the document to become active, then
- // retry saved BLE restoration. Web Bluetooth permissions are origin-scoped;
- // no pairing dialog is opened automatically (that requires a user gesture).
- function startPrinterRestore(){
+ // Restore saved printer after cold launch and whenever the installed PWA resumes.
+ // A user gesture is still required for a first-time Bluetooth pairing prompt.
+ function startSavedPrinterRestore(){
   if(document.visibilityState==='hidden')return;
   printerReconnectEnabled=true;
   setTimeout(restoreDeviceConnections,900);
-  setTimeout(()=>{if(!printerReady())restoreDeviceConnections();},3500);
+  setTimeout(()=>{if(!printerReady())restoreDeviceConnections();},3200);
  }
- if(document.readyState==='complete')startPrinterRestore();
- else window.addEventListener('load',startPrinterRestore,{once:true});
- // Also recover when an installed PWA is resumed from the task switcher.
+ if(document.readyState==='complete')startSavedPrinterRestore();
+ else window.addEventListener('load',startSavedPrinterRestore,{once:true});
  document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&!printerReady())setTimeout(restoreDeviceConnections,500);
  });
