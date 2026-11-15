@@ -13695,6 +13695,48 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<style id="calculator-total-inline-display-corrected">
+/* Keep the original expression size and behavior untouched.
+   Enlarge only the total amount to match the original 30px expression text. */
+body:not(.home-mode) .app-container > .display-container{
+  display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+  gap:10px;text-align:left;min-width:0;
+}
+body:not(.home-mode) .app-container > .display-container .calculator-expression-visual-wrap{
+  flex:1 1 auto;width:auto;min-width:0;
+}
+body:not(.home-mode) .app-container > .display-container #display-expr,
+body:not(.home-mode) .app-container > .display-container #display-expr-colored{
+  /* Deliberately no font-size override: preserve the original expression styling. */
+  text-align:left!important;
+}
+body:not(.home-mode) .app-container > .display-container .result-preview{
+  flex:0 0 auto;min-width:0;min-height:0;margin:0;padding:11px 16px;
+  border-radius:12px;background:#dcfce7;color:#15803d;
+  font-size:30px!important;font-weight:800;line-height:1.15;
+  white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums;
+}
+body:not(.home-mode) .app-container > .display-container .result-preview:not(:empty)::before{
+  content:"₹ ";
+}
+body.dark:not(.home-mode) .app-container > .display-container .result-preview{
+  background:#123a2b;color:#6ee7a5;
+}
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  body:not(.home-mode) .app-container > .display-container{
+    padding:3px 8px;gap:6px;
+  }
+  body:not(.home-mode) .app-container > .display-container .result-preview{
+    padding:9px 13px;font-size:30px!important;
+  }
+}
+@media(max-width:380px){
+  body:not(.home-mode) .app-container > .display-container{gap:5px;padding-left:10px;padding-right:10px}
+  body:not(.home-mode) .app-container > .display-container .result-preview{padding:8px 11px;font-size:30px!important}
+}
+</style>
+
 </body>
 
 <style id="bs-sticker-content-fit-final">
