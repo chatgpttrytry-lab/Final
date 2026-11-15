@@ -16,6 +16,26 @@ body.home-mode #sa-home{display:flex!important;}
 
 .custom-date-range-overlay{display:none;position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.48);align-items:center;justify-content:center}.custom-date-range-overlay.open{display:flex}.custom-date-range-card{width:min(430px,calc(100vw - 28px));background:var(--surface);color:var(--text);border-radius:16px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.25)}.custom-date-range-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.custom-date-range-head button{width:32px;height:32px;border:0;border-radius:9px;background:var(--surface2);font-weight:900}.custom-date-range-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.custom-date-range-fields label{font-size:10px;font-weight:900;color:var(--muted)}.custom-date-range-fields input{display:block;width:100%;box-sizing:border-box;margin-top:5px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);padding:0 8px;font-weight:800}.custom-date-range-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}.custom-date-range-actions button{height:38px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);font-weight:900;padding:0 10px}.custom-date-range-actions .apply{background:var(--blue);color:#fff;border-color:var(--blue)}.history-ranking-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.history-rank-btn{height:32px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);font-size:10px;font-weight:900;padding:0 9px}.history-rank-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 </style>
+<style id="billing-new-product-row-green">
+/* Only the latest added product row is highlighted; works with TOP and BOTTOM ordering. */
+body:not(.dark) #billing-overlay .billing-cart-row.billing-cart-row-new{
+  background:#b9f6ca !important;
+  box-shadow:inset 0 0 0 2px #16a34a !important;
+  border:2px solid #16a34a !important;
+}
+body:not(.dark) #billing-overlay .billing-cart-row.billing-cart-row-new input:not(.billing-select-box){
+  background:#e4ffeb !important; color:#123b20 !important; border-color:#22a447 !important;
+}
+body:not(.dark) #billing-overlay .billing-cart-row.billing-cart-row-new > span{color:#14532d !important;}
+body.dark #billing-overlay .billing-cart-row.billing-cart-row-new{
+  background:#124b35 !important;
+  box-shadow:inset 0 0 0 2px #22c55e !important;
+  border:2px solid #22c55e !important;
+}
+body.dark #billing-overlay .billing-cart-row.billing-cart-row-new input:not(.billing-select-box){
+  background:#0b1820 !important; color:#f4fff7 !important; border-color:#23834a !important;
+}
+</style>
 <script id="startup-no-flash-release">
 (function(){
   function release(){
@@ -45,8 +65,16 @@ html,body{width:100%;height:100%;overflow:hidden}body{background:var(--bg);color
 .app-container{width:100%;max-width:1100px;height:calc(100dvh - 12px);max-height:none;background:var(--surface);border:1px solid var(--border);border-radius:28px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
 .topbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex:none}.brand{font-size:18px;font-weight:700}.brand span{color:var(--blue)}
 .theme-btn{width:40px;height:40px;border:0;border-radius:50%;background:var(--surface2);color:var(--text);font-size:19px;cursor:pointer}
-.qr-section{padding:4px 18px 8px;display:flex;justify-content:center;flex:none}.qr-card{width:100%;background:var(--blue2);border:1px solid color-mix(in srgb,var(--blue) 18%,transparent);border-radius:22px;padding:12px 16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px}.qr-box{background:#fff;padding:8px;border-radius:14px;line-height:0}.qr-box canvas,.qr-box img{width:190px!important;height:190px!important;max-width:100%;object-fit:contain}.amount-display{font-size:23px;font-weight:700;color:var(--blue)}
-.config-section{padding:0 18px;display:grid;gap:8px;flex:none}.input-group{height:46px;position:relative}.input-group label{position:absolute;left:14px;top:-7px;background:var(--surface);padding:0 5px;font-size:10px;color:var(--muted);font-weight:600;z-index:1}.input-group input{width:100%;height:46px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:0 82px 0 14px;font-size:15px;outline:0}.input-group.offer-message-group input{padding-right:14px}.input-actions{position:absolute;right:8px;top:7px;display:flex;gap:4px}.input-actions .save-icon{position:static;width:32px;height:32px}.qr-select-btn{font-size:18px}.input-group input:focus{border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 12%,transparent)}.save-icon{position:absolute;right:8px;top:7px;width:32px;height:32px;border:0;border-radius:10px;background:var(--blue2);color:var(--blue);font-size:17px}
+.qr-section{padding:4px 18px 8px;display:flex;justify-content:center;flex:none}.qr-card{width:100%;background:var(--blue2);border:1px solid color-mix(in srgb,var(--blue) 18%,transparent);border-radius:22px;padding:12px 16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px}.qr-box{background:#fff;padding:8px;border-radius:14px;line-height:0}.qr-box canvas,.qr-box img{width:160px!important;height:160px!important;max-width:100%;object-fit:contain}.amount-display{font-size:23px;font-weight:700;color:var(--blue)}
+/* Keep a fixed status row in the QR card at all times so saving never changes card height. */
+#calculator-bill-saved-status{display:block!important;visibility:hidden;opacity:0;margin-top:2px;padding:5px 10px;height:28px;min-height:28px;box-sizing:border-box;flex:0 0 28px;border-radius:9px;background:#dcfce7;color:#166534;border:1px solid #86efac;font-size:clamp(9px,1.45vh,12px);font-weight:800;line-height:16px;text-align:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;align-self:center}
+#calculator-bill-saved-status.is-visible{display:block!important;visibility:visible!important;opacity:1!important}
+body.dark #calculator-bill-saved-status{background:#064e3b;color:#dcfce7;border-color:#4ade80}
+.config-section{padding:0 18px;display:grid;gap:8px;flex:none}
+.config-section{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:8px;row-gap:0;align-items:start}
+.config-section>.input-group{height:auto;min-width:0}
+.config-section>.input-group input{min-width:0}
+@media(max-width:360px){.config-section{column-gap:5px;padding-left:12px;padding-right:12px}#calculator-bill-saved-status{font-size:9px;padding:5px 4px}}.input-group{height:46px;position:relative}.input-group label{position:absolute;left:14px;top:-7px;background:var(--surface);padding:0 5px;font-size:10px;color:var(--muted);font-weight:600;z-index:1}.input-group input{width:100%;height:46px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:0 82px 0 14px;font-size:15px;outline:0}.input-group.offer-message-group input{padding-right:14px}.input-actions{position:absolute;right:8px;top:7px;display:flex;gap:4px}.input-actions .save-icon{position:static;width:32px;height:32px}.qr-select-btn{font-size:18px}.input-group input:focus{border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 12%,transparent)}.save-icon{position:absolute;right:8px;top:7px;width:32px;height:32px;border:0;border-radius:10px;background:var(--blue2);color:var(--blue);font-size:17px}
 .display-container{padding:8px 22px 3px;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;min-height:72px;flex:1}.expression{font-size:30px;font-weight:500;white-space:normal;overflow-x:hidden;overflow-y:auto;overflow-wrap:anywhere;word-break:break-word;line-height:1.08;max-height:92px;min-height:34px;color:var(--text);scrollbar-width:thin}.result-preview{font-size:15px;color:var(--muted);min-height:18px;margin-top:2px}
 .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:8px 18px 10px;flex:none}.btn{border:0;outline:0;border-radius:16px;height:clamp(60px,9vh,96px);font-size:22px;font-weight:600;cursor:pointer;color:var(--text);background:var(--surface2);transition:transform .08s,filter .1s,background-color .1s,color .1s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .keypad .btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.keypad .btn.calc-touch-active{background:#16a34a!important;color:#fff!important;transform:scale(.94);filter:brightness(1.08)}
@@ -1901,6 +1929,7 @@ div>
         <div class="qr-card">
             <div class="qr-box" id="qrcode"></div>
             <div class="amount-display" id="qr-amount">₹ 0.00</div>
+            <div id="calculator-bill-saved-status" role="status" aria-live="polite">✓ BILL SAVED SUCCESSFULLY</div>
         </div>
     </div>
 
@@ -2242,6 +2271,7 @@ function toggleTheme(){
     }
 
     function syncExpressionFromEditor(value, caretStart, caretEnd){
+        hideCalculatorBillSavedStatus();
         const normalized=normalizeExpressionInput(value);
         if(displayExpr.value!==normalized){
             displayExpr.value=normalized;
@@ -2318,7 +2348,7 @@ function toggleTheme(){
                 expr=String(rounded); lastCalculationExpression=calculationExpr; justEvaluated=true; openParenthesesCount=0;
                 displayExpr.value=expr; displayExpr.setSelectionRange(expr.length,expr.length);
                 displayRes.innerText=''; updateQR(rounded); syncCalculatorItemsToInvoice(true);
-                if(rounded>0){ saveHistoryItem(); const eqBtn=document.querySelector('.btn-eq'); if(eqBtn){const oldText=eqBtn.textContent;eqBtn.textContent='✓ Saved';eqBtn.classList.add('saved-feedback');clearTimeout(eqBtn._savedTimer);eqBtn._savedTimer=setTimeout(()=>{eqBtn.textContent=oldText;eqBtn.classList.remove('saved-feedback');},900);} }
+                if(rounded>0){ saveHistoryItem(); showCalculatorBillSavedStatus('✓ CALCULATION SAVED SUCCESSFULLY'); const eqBtn=document.querySelector('.btn-eq'); if(eqBtn){const oldText=eqBtn.textContent;eqBtn.textContent='✓ Saved';eqBtn.classList.add('saved-feedback');clearTimeout(eqBtn._savedTimer);eqBtn._savedTimer=setTimeout(()=>{eqBtn.textContent=oldText;eqBtn.classList.remove('saved-feedback');},900);} }
             }catch(err){ displayRes.innerText=''; }
             return;
         }else{
@@ -2348,6 +2378,7 @@ function toggleTheme(){
     }
 
     function handlePress(key) {
+        if(key!=='=') hideCalculatorBillSavedStatus();
         // When the calculation bar has focus, keypad keys operate at the native
         // caret/selection position instead of always appending to the end.
         if(document.activeElement===displayExpr){
@@ -2416,7 +2447,7 @@ function toggleTheme(){
                     displayRes.innerText = "";
                     updateQR(roundedFinal);
                     justEvaluated = true;
-                    if (roundedFinal > 0) { saveHistoryItem(); const eqBtn=document.querySelector('.btn-eq'); if(eqBtn){ const oldText=eqBtn.textContent; eqBtn.textContent='✓ Saved'; eqBtn.classList.add('saved-feedback'); clearTimeout(eqBtn._savedTimer); eqBtn._savedTimer=setTimeout(()=>{eqBtn.textContent=oldText;eqBtn.classList.remove('saved-feedback');},900); } }
+                    if (roundedFinal > 0) { saveHistoryItem(); showCalculatorBillSavedStatus('✓ CALCULATION SAVED SUCCESSFULLY'); const eqBtn=document.querySelector('.btn-eq'); if(eqBtn){ const oldText=eqBtn.textContent; eqBtn.textContent='✓ Saved'; eqBtn.classList.add('saved-feedback'); clearTimeout(eqBtn._savedTimer); eqBtn._savedTimer=setTimeout(()=>{eqBtn.textContent=oldText;eqBtn.classList.remove('saved-feedback');},900); } }
                 } else {
                     expr = "Error";
                 }
@@ -4279,6 +4310,36 @@ function saveCalculatorInvoiceHistory(extra={}){
   advanceBillNumberAfterSave(bill,'calculator');
   return true;
 }
+function hideCalculatorBillSavedStatus(){
+  const el=document.getElementById('calculator-bill-saved-status');
+  if(!el)return false;
+  el.closest('.qr-card')?.classList.remove('has-saved-status');
+  el.classList.remove('is-visible');
+  el.hidden=true;
+  el.style.removeProperty('display');
+  el.style.removeProperty('visibility');
+  el.style.removeProperty('opacity');
+  el.style.removeProperty('z-index');
+  window.__billSavedStatusPending=false;
+  return true;
+}
+
+function showCalculatorBillSavedStatus(message='✓ BILL SAVED SUCCESSFULLY'){
+  const el=document.getElementById('calculator-bill-saved-status');
+  if(!el){console.warn('Bill-saved status element is missing from the QR card.');window.__billSavedStatusPending=true;return false;}
+  el.textContent=String(message||'✓ BILL SAVED SUCCESSFULLY');
+  el.closest('.qr-card')?.classList.add('has-saved-status');
+  el.hidden=false;
+  el.removeAttribute('hidden');
+  el.classList.add('is-visible');
+  el.style.setProperty('display','block','important');
+  el.style.setProperty('visibility','visible','important');
+  el.style.setProperty('opacity','1','important');
+  el.style.setProperty('z-index','2','important');
+  const billingOverlay=document.getElementById('billing-overlay');
+  window.__billSavedStatusPending=!!(billingOverlay&&billingOverlay.classList.contains('open'));
+  return true;
+}
 function saveCurrentBill(){
   try{
     invoiceCustomizationMode='calculator';
@@ -4288,6 +4349,7 @@ function saveCurrentBill(){
     saveInvoiceSettings('calculator');
     localStorage.removeItem(CAL_CURRENT_BILL_KEY);
     if(saved){
+      showCalculatorBillSavedStatus();
       resetCalculatorAfterSave();setPrinterStatus('✓ Calculator Invoice saved','connected');renderHistory();
       // Cloud branch: queue/sync only this completed Calculator sale after a successful save.
       try{ if(typeof window.cloudBackupAfterSale==='function') window.cloudBackupAfterSale('calculator'); }catch(_){ }
@@ -4332,6 +4394,7 @@ async function printCurrentPayment(){
     const printToken=beginInvoiceHistorySave('calculator',bill,null);
     const historySaved=saveInvoiceHistoryOnce('calculator',printToken,()=>saveCalculatorInvoiceHistory({editingHistoryId:null,bill,upi:printUpi,shop:document.getElementById('invoice-shop').textContent,title:document.getElementById('invoice-title').textContent,discount,displaySettings:getInvoiceDisplaySettings('calculator')}));
     if(historySaved===true){
+      showCalculatorBillSavedStatus();
       const printBtn=document.querySelector('.calculator-58mm-print-btn');
       if(printBtn){
         const oldHTML=printBtn.innerHTML;
@@ -5910,6 +5973,9 @@ function loadBillingDraft(id){
 function deleteBillingDraft(id){const a=getBillingDrafts().filter(x=>Number(x.id)!==Number(id));saveBillingDrafts(a);openBillingDrafts();}
 
 let billingCart = [];
+// Keep the most recently added/selected product row visibly marked.
+let billingRecentlyAddedItemId = null;
+function markBillingRecentlyAddedItem(id){billingRecentlyAddedItemId=String(id);}
 let dbEditingId = null;
 
 function getItemDB(){
@@ -6978,6 +7044,12 @@ function closeBilling(){
   const ex=document.getElementById("billing-edit-expression");if(ex)ex.value="";
   document.getElementById("billing-overlay").classList.remove("open");
   document.getElementById("billing-overlay").setAttribute("aria-hidden","true");
+  // The QR card sits behind the POS Billing overlay. Reveal the saved message
+  // after the overlay closes so it is visible to the user in either orientation.
+  if(window.__billSavedStatusPending){
+    requestAnimationFrame(()=>showCalculatorBillSavedStatus());
+    setTimeout(()=>showCalculatorBillSavedStatus(),80);
+  }
 }
 function saveBillingCart(){
   const items=Array.isArray(billingCart)?billingCart:[];
@@ -7615,6 +7687,7 @@ function saveBillingNewItemModal(){
   const newBillingItem={id:item.id,code:item.code,name:invoiceStudioNormalizeItemName(item.name,item),mrp:item.mrp,rate:item.rate,purchase:item.purchase,qty:1,tax:0,discountSelected:false,discountPercent:billingDiscountPercent};
   if(getBillingAddPosition()==='top')billingCart.unshift(newBillingItem);
   else billingCart.push(newBillingItem);
+  markBillingRecentlyAddedItem(newBillingItem.id);
   saveBillingCart();
   renderBillingCart();
   closeBillingNewItemModal();
@@ -7644,10 +7717,12 @@ function addDBItemToBilling(id){
   const existing=billingCart.find(x=>Number(x.id)===Number(id));
   if(existing) {
     existing.qty=(Number(existing.qty)||0)+1;
+    markBillingRecentlyAddedItem(existing.id);
   } else {
     const newItem={id:item.id,code:item.code,name:invoiceStudioNormalizeItemName(item.name,item),mrp:Number(item.mrp)||0,rate:Number(item.rate)||0,purchase:Number(item.purchase)||0,qty:1,tax:Number(item.tax)||0,discountSelected:false,discountPercent:billingDiscountPercent};
     if(getBillingAddPosition()==="top") billingCart.unshift(newItem);
     else billingCart.push(newItem);
+    markBillingRecentlyAddedItem(newItem.id);
   }
   saveBillingCart(); renderBillingCart();
   if(document.getElementById('billing-camera-overlay')?.classList.contains('open')) billingCameraUpdateCartSummary();
@@ -7876,7 +7951,7 @@ function renderBillingCart(){
     // only to the final bill total/invoice calculation.
     const rateDisplay=String(Math.round(Number(baseRate)||0));
     const chargeTitle=isCreditCardPayment() ? 'Base sale rate • '+Number(billingCreditCardCharge||0)+'% Credit Card charge added separately' : isMDRPayment() ? 'Base sale rate • '+Number(billingMdrCharge||0)+'% MDR charge added separately' : 'Base sale rate';
-    return '<div class="billing-cart-row"><input class="billing-select-box" type="checkbox" '+(selected?'checked':'')+' aria-label="Apply MRP discount" onchange="toggleBillingItemDiscount('+i+',this.checked)"><input class="cart-name cart-name-edit" value="'+name+'" title="Edit item name" oninput="updateBillingCartField('+i+',\'name\',this.value)"><input type="number" min="0" step="0.01" value="'+mrp+'" onchange="updateBillingCartField('+i+',\'mrp\',this.value)"><div class="qty-stepper"><button onclick="changeBillingQty('+i+',-1)">−</button><input type="number" min="0" step="1" value="'+qty+'" onchange="updateBillingCartField('+i+',\'qty\',this.value)"><button onclick="changeBillingQty('+i+',1)">+</button></div><input class="'+(selected?'billing-selected-rate':'')+'" type="number" min="0" step="0.01" value="'+rateDisplay+'" title="'+chargeTitle+'" '+(selected?'readonly':'onchange="updateBillingCartField('+i+',\'rate\',this.value)"')+'><span class="billing-final-rate" aria-readonly="true" title="Final Rate • Locked">'+String(Math.round(Number(eff)||0))+'</span><span>'+moneyShort(Math.round((Number(eff)||0)*qty))+'</span><button class="cart-del" onclick="removeBillingCartItem('+i+')">×</button></div>';
+    return '<div class="billing-cart-row '+(billingRecentlyAddedItemId!==null && String(x.id)===billingRecentlyAddedItemId?'billing-cart-row-new':'')+'"><input class="billing-select-box" type="checkbox" '+(selected?'checked':'')+' aria-label="Apply MRP discount" onchange="toggleBillingItemDiscount('+i+',this.checked)"><input class="cart-name cart-name-edit" value="'+name+'" title="Edit item name" oninput="updateBillingCartField('+i+',\'name\',this.value)"><input type="number" min="0" step="0.01" value="'+mrp+'" onchange="updateBillingCartField('+i+',\'mrp\',this.value)"><div class="qty-stepper"><button onclick="changeBillingQty('+i+',-1)">−</button><input type="number" min="0" step="1" value="'+qty+'" onchange="updateBillingCartField('+i+',\'qty\',this.value)"><button onclick="changeBillingQty('+i+',1)">+</button></div><input class="'+(selected?'billing-selected-rate':'')+'" type="number" min="0" step="0.01" value="'+rateDisplay+'" title="'+chargeTitle+'" '+(selected?'readonly':'onchange="updateBillingCartField('+i+',\'rate\',this.value)"')+'><span class="billing-final-rate" aria-readonly="true" title="Final Rate • Locked">'+String(Math.round(Number(eff)||0))+'</span><span>'+moneyShort(Math.round((Number(eff)||0)*qty))+'</span><button class="cart-del" onclick="removeBillingCartItem('+i+')">×</button></div>';
   }).join("");
   const t=billingTotals();
   const cost=billingCart.reduce((s,x)=>s+(Number(x.purchase)||0)*(Number(x.qty)||0),0);
@@ -14359,6 +14434,45 @@ body.dark:not(.home-mode) .app-container > .display-container .result-preview{
 }
 </style>
 
+<style id="billing-landscape-light-mode-search-suggestion-visibility-fix">
+/* Light-mode only: give Billing search suggestions opaque surfaces so the
+   Add Item / New Item suggestions remain readable. No layout or logic changes. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  body:not(.dark) #billing-overlay.open #billing-search-results,
+  body:not(.dark) #billing-overlay.open .billing-search-results{
+    background:#f8fafc!important;
+    color:#1f2937!important;
+    border:1px solid #cbd5e1!important;
+    opacity:1!important;
+  }
+  body:not(.dark) #billing-overlay.open #billing-search-results .billing-result,
+  body:not(.dark) #billing-overlay.open .billing-search-results .billing-result{
+    background:#ffffff!important;
+    color:#1f2937!important;
+    border:1px solid #cbd5e1!important;
+    opacity:1!important;
+  }
+  body:not(.dark) #billing-overlay.open #billing-search-results .billing-result-name,
+  body:not(.dark) #billing-overlay.open .billing-search-results .billing-result-name{
+    color:#1e293b!important;
+  }
+  body:not(.dark) #billing-overlay.open #billing-search-results .billing-result-price,
+  body:not(.dark) #billing-overlay.open .billing-search-results .billing-result-price{
+    color:#64748b!important;
+  }
+  body:not(.dark) #billing-overlay.open #billing-search-results .billing-result.billing-new-item,
+  body:not(.dark) #billing-overlay.open .billing-search-results .billing-result.billing-new-item{
+    background:#eaf2ff!important;
+    border-color:#93c5fd!important;
+  }
+  body:not(.dark) #billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected,
+  body:not(.dark) #billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected{
+    background:#dbeafe!important;
+    border-color:#3b82f6!important;
+  }
+}
+</style>
+
 
 <style id="billing-landscape-action-buttons-equal-height-only">
 /* UI-only: enlarge the seven Billing action buttons equally in landscape to use the blank area below Payment Mode. */
@@ -14870,3 +14984,91 @@ body.dark:not(.home-mode) .app-container > .display-container .result-preview{
 })();
 </script>
 
+
+
+<style id="billing-search-suggestion-strip-day-night-contrast">
+/* Only POS Billing item-search suggestions. Keep each suggestion fully opaque. */
+#billing-overlay.open #billing-search-results,
+#billing-overlay.open .billing-search-results{
+  opacity:1!important;
+}
+/* Night Mode: white suggestion strips with dark readable text. */
+body.dark #billing-overlay.open #billing-search-results .billing-result,
+body.dark #billing-overlay.open .billing-search-results .billing-result{
+  background:#ffffff!important;
+  color:#111827!important;
+  border:1px solid #cbd5e1!important;
+  opacity:1!important;
+}
+body.dark #billing-overlay.open #billing-search-results .billing-result-name,
+body.dark #billing-overlay.open #billing-search-results .billing-result-price,
+body.dark #billing-overlay.open .billing-search-results .billing-result-name,
+body.dark #billing-overlay.open .billing-search-results .billing-result-price{
+  color:#111827!important;
+  -webkit-text-fill-color:#111827!important;
+}
+/* Day Mode: black suggestion strips with white readable text. */
+body:not(.dark) #billing-overlay.open #billing-search-results .billing-result,
+body:not(.dark) #billing-overlay.open .billing-search-results .billing-result{
+  background:#111827!important;
+  color:#ffffff!important;
+  border:1px solid #475569!important;
+  opacity:1!important;
+}
+body:not(.dark) #billing-overlay.open #billing-search-results .billing-result-name,
+body:not(.dark) #billing-overlay.open #billing-search-results .billing-result-price,
+body:not(.dark) #billing-overlay.open .billing-search-results .billing-result-name,
+body:not(.dark) #billing-overlay.open .billing-search-results .billing-result-price{
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+/* Keep the ADD / ADD NEW action buttons in their existing blue style. */
+#billing-overlay.open #billing-search-results .billing-result button,
+#billing-overlay.open .billing-search-results .billing-result button{
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+</style>
+
+
+<style id="billing-search-selected-row-blue-theme">
+/* Selected POS Billing suggestion only: blue highlight with readable details. */
+body:not(.dark) #billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected,
+body:not(.dark) #billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected{
+  background:#DBEAFE!important;
+  color:#172554!important;
+  border:1px solid #2563EB!important;
+  outline:2px solid #2563EB!important;
+  outline-offset:-2px!important;
+  box-shadow:inset 0 0 0 1px rgba(37,99,235,.16)!important;
+}
+body:not(.dark) #billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected .billing-result-name,
+body:not(.dark) #billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected .billing-result-price,
+body:not(.dark) #billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected .billing-result-name,
+body:not(.dark) #billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected .billing-result-price{
+  color:#172554!important;-webkit-text-fill-color:#172554!important;
+}
+body.dark #billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected,
+body.dark #billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected{
+  background:#1E3A5F!important;
+  color:#FFFFFF!important;
+  border:1px solid #60A5FA!important;
+  outline:2px solid #60A5FA!important;
+  outline-offset:-2px!important;
+  box-shadow:inset 0 0 0 1px rgba(96,165,250,.20)!important;
+}
+body.dark #billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected .billing-result-name,
+body.dark #billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected .billing-result-price,
+body.dark #billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected .billing-result-name,
+body.dark #billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected .billing-result-price{
+  color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;
+}
+#billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected .billing-result-rank,
+#billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected .billing-result-rank{
+  color:inherit!important;
+}
+#billing-overlay.open #billing-search-results .billing-result.billing-kbd-selected button,
+#billing-overlay.open .billing-search-results .billing-result.billing-kbd-selected button{
+  background:#2563EB!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;
+}
+</style>
