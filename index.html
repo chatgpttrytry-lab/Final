@@ -3957,7 +3957,10 @@ async function attachBluetoothPrinter(device){
   btCharacteristic=await findWritableCharacteristic(server);
   if(!btCharacteristic)throw new Error("Printer connected but no writable BLE channel was found");
   btWriteMode=btCharacteristic.properties.writeWithoutResponse?"withoutResponse":"write";
+  // Persist the browser-granted device identifier and display name. Web Bluetooth
+  // intentionally does not expose the hardware MAC address to web pages.
   localStorage.setItem(PRINTER_NAME_KEY,device.name||"Bluetooth printer");
+  try{localStorage.setItem('upi-printer-device-profile-v1',JSON.stringify({name:device.name||"Bluetooth printer",deviceId:device.id,identifierType:'Web Bluetooth device.id',savedAt:new Date().toISOString()}));}catch(e){}
   const model=detectPrinterModel(device.name);if(model)localStorage.setItem(PRINTER_MODEL_KEY,model);
   const paper=getPrinterPaperSize(model);
   setPrinterStatus("Connected: "+(device.name||"Bluetooth printer")+" • "+(paper==='80'?'80mm / 3-inch':'58mm / 2-inch'),"connected");
@@ -3995,7 +3998,11 @@ async function connectBluetoothPrinter(){
     setPrinterStatus("Choose your default Bluetooth printer…");
     const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:BT_PROFILES.map(p=>p.service)});
     if(!device)return;
-    try{localStorage.setItem(PRINTER_DEVICE_ID_KEY,device.id);}catch(e){}
+    try{
+      localStorage.setItem(PRINTER_DEVICE_ID_KEY,device.id);
+      localStorage.setItem(PRINTER_NAME_KEY,device.name||"Bluetooth printer");
+      localStorage.setItem('upi-printer-device-profile-v1',JSON.stringify({name:device.name||"Bluetooth printer",deviceId:device.id,identifierType:'Web Bluetooth device.id',savedAt:new Date().toISOString()}));
+    }catch(e){}
     await attachBluetoothPrinter(device);
     updateDeviceSettingsStatus();
   }catch(err){btPrinter=null;btCharacteristic=null;btWriteMode="";setPrinterStatus("Connection failed: "+(err.message||"Try again"),"error");}
@@ -8517,8 +8524,17 @@ async function printPOSInvoice58mm(saveHistory=true){
     if(paymentEl) paymentEl.textContent=String(billingPaymentMode||'Cash');
     // Keep saved settings synchronized before constructing ESC/POS bytes.
     try{saveInvoiceSettings('billing');}catch(e){}
-    // If no printer is connected, open the printer panel instead of silently doing nothing.
-    if(!printerReady()){openPrinterPanel(true);setPrinterStatus('Connect your '+(studioPaper==='80'?'80mm':'58mm')+' Bluetooth printer first','error');return false;}
+    // On every POS print tap, first reconnect the previously paired printer.
+    // Only ask for a new pairing if the saved device cannot be reached.
+    if(!printerReady()){
+      printerReconnectEnabled=true;
+      let reconnected=false;
+      if(window.AndroidPrinter&&typeof window.AndroidPrinter.connect==='function'){
+        try{const result=await Promise.resolve(window.AndroidPrinter.connect());reconnected=result!==false;androidPrinterConnected=reconnected;}catch(e){androidPrinterConnected=false;}
+      }
+      if(!reconnected)reconnected=await connectSavedBluetoothPrinter(false);
+      if(!printerReady()&&!reconnected){openPrinterPanel(true);setPrinterStatus('Saved printer not reachable • Pair / connect your '+(studioPaper==='80'?'80mm':'58mm')+' printer','error');return false;}
+    }
     const mrp=items.reduce((s,it)=>s+(Number(it.price)||0)*(Number(it.qty)||0),0);
     const baseTotal=items.reduce((s,it)=>s+(Number(it.baseRate ?? it.rate)||0)*(Number(it.qty)||0),0);
     const grossTotal=items.reduce((s,it)=>s+(Number(it.rate)||0)*(Number(it.qty)||0),0);
