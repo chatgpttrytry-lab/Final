@@ -2018,7 +2018,7 @@ div>
                 <div class="calc-qr-meta"><small>TIME</small><b id="calc-qr-time">—</b></div>
                 <div class="calc-qr-meta"><small>BILL NO</small><b id="calc-qr-bill">—</b></div>
                 <div class="calc-qr-meta"><small>PREVIOUS BILL</small><b id="calc-qr-previous">₹0.00</b></div>
-                <label class="calc-qr-cash"><span>CASH RECEIVED</span><input id="calc-qr-cash-input" type="text" inputmode="none" readonly enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" min="0" step="0.01" placeholder="Enter cash" aria-label="Cash received"></label>
+                <label class="calc-qr-cash"><span>CASH RECEIVED</span><input id="calc-qr-cash-input" type="text" inputmode="none" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" min="0" step="0.01" placeholder="Enter cash" aria-label="Cash received"></label>
                 <div class="calc-qr-refund"><span id="calc-qr-refund-label">CASH REFUND</span><strong id="calc-qr-refund-amount">₹0.00</strong><small id="calc-qr-due"></small></div>
               </div>
             </div>
@@ -14068,8 +14068,9 @@ body.dark:not(.home-mode) .app-container > .display-container .result-preview{
     var el=document.getElementById('calc-qr-cash-input');
     if(!el)return;
     el.type='text';
-    el.readOnly=true;
-    el.setAttribute('readonly','readonly');
+    // Suppress the soft keyboard while allowing physical keyboard input.
+    el.readOnly=false;
+    el.removeAttribute('readonly');
     el.setAttribute('inputmode','none');
     el.setAttribute('autocomplete','off');
     el.setAttribute('autocorrect','off');
@@ -14080,6 +14081,17 @@ body.dark:not(.home-mode) .app-container > .display-container .result-preview{
     el.setAttribute('data-lpignore','true');
     el.setAttribute('data-1p-ignore','true');
     el.setAttribute('data-bwignore','true');
+    if(el.dataset.hardwareNumericKeysInstalled!=='1'){
+      el.dataset.hardwareNumericKeysInstalled='1';
+      el.addEventListener('keydown',function(e){
+        if(e.ctrlKey||e.metaKey||e.altKey) return;
+        const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','Home','End','Tab','Enter'];
+        if(allowed.includes(e.key)) return;
+        if(/^\d$/.test(e.key)) return;
+        if(e.key==='.' && !String(el.value||'').includes('.')) return;
+        if(e.key.length===1) e.preventDefault();
+      });
+    }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixCashReceivedKeyboard);
   else fixCashReceivedKeyboard();
