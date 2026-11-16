@@ -1373,9 +1373,10 @@ body.dark #billing-overlay button {
         /* Match the working search field's keyboard behavior, while retaining
            the decimal keypad on Android. */
         el.type='search';
-        el.setAttribute('inputmode','decimal');
+        // Suppress the Android soft keyboard; enter cash with the calculator keys.
+    el.setAttribute('inputmode','none');
       } else if(el.type==='text' || !el.type) el.type='search';
-      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocomplete','off');
       el.setAttribute('autocorrect','off');
       el.setAttribute('autocapitalize','off');
       el.setAttribute('spellcheck','false');
@@ -1384,11 +1385,12 @@ body.dark #billing-overlay button {
       } else {
         el.setAttribute('inputmode', el.type==='number' ? 'decimal' : 'search');
       }
-      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('enterkeyhint','none');
       el.setAttribute('data-form-type','other');
       el.setAttribute('data-lpignore','true');
       el.setAttribute('data-1p-ignore','true');
       el.setAttribute('data-bwignore','true');
+    if(!el.__cashKeyboardBlocked){el.addEventListener('beforeinput',function(e){e.preventDefault();},true);el.__cashKeyboardBlocked=true;}
     });
     var overlay=document.getElementById('item-db-overlay');
     if(overlay){
@@ -1400,6 +1402,36 @@ body.dark #billing-overlay button {
   else fixItemDatabaseKeyboardFields();
   document.addEventListener('click',function(e){
     if(e.target && (e.target.closest?.('#item-db-overlay') || e.target.id==='db-list-tab' || e.target.id==='db-form-tab')) setTimeout(fixItemDatabaseKeyboardFields,50);
+  },true);
+})();
+</script>
+<script id="pos-billing-opening-due-mrp-keyboard-match-js">
+(function(){
+  function configureOpeningDueKeyboard(){
+    var el=document.getElementById('party-opening-input');
+    if(!el)return;
+    /* Match the Item Database MRP field's working Android keyboard behavior. */
+    el.type='text';
+    el.readOnly=true;
+    el.setAttribute('readonly','readonly');
+    el.setAttribute('inputmode','none');
+    el.setAttribute('enterkeyhint','none');
+    el.setAttribute('autocomplete','off');
+    el.setAttribute('autocorrect','off');
+    el.setAttribute('autocapitalize','off');
+    el.setAttribute('spellcheck','false');
+    el.setAttribute('data-form-type','other');
+    el.setAttribute('data-lpignore','true');
+    el.setAttribute('data-1p-ignore','true');
+    el.setAttribute('data-bwignore','true');
+    var form=el.closest('.party-form');
+    if(form)form.setAttribute('autocomplete','off');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',configureOpeningDueKeyboard,{once:true});
+  else configureOpeningDueKeyboard();
+  window.addEventListener('pageshow',configureOpeningDueKeyboard);
+  document.addEventListener('click',function(e){
+    if(e.target && (e.target.closest?.('#party-form-overlay'))) setTimeout(configureOpeningDueKeyboard,50);
   },true);
 })();
 </script>
@@ -1419,12 +1451,12 @@ body.dark #billing-overlay button {
       var el=document.getElementById(id);
       if(!el)return;
       el.type='search';
-      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocomplete','off');
       el.setAttribute('autocorrect','off');
       el.setAttribute('autocapitalize','off');
       el.setAttribute('spellcheck','false');
       el.setAttribute('inputmode','search');
-      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('enterkeyhint','none');
       el.setAttribute('data-form-type','other');
       el.setAttribute('data-lpignore','true');
       el.setAttribute('data-1p-ignore','true');
@@ -1464,13 +1496,13 @@ body.dark #billing-overlay button {
     var selectors=['#billing-overlay #billing-mode-edit-charge','#billing-overlay #billing-mode-edit-upi','#billing-overlay #billing-payment-mode','#party-receive-overlay #party-receive-amount','#party-receive-overlay #party-receive-note'];
     selectors.forEach(function(sel){var el=document.querySelector(sel);if(!el)return;
       if(el.tagName==='INPUT' && el.type!=='checkbox' && el.type!=='radio'){
-        el.setAttribute('autocomplete','new-password');el.setAttribute('autocorrect','off');
+        el.setAttribute('autocomplete','off');el.setAttribute('autocorrect','off');
         el.setAttribute('autocapitalize','off');el.setAttribute('spellcheck','false');
         el.setAttribute('data-form-type','other');el.setAttribute('data-lpignore','true');
         el.setAttribute('data-1p-ignore','true');el.setAttribute('data-bwignore','true');
         if(el.type==='number'){el.setAttribute('inputmode','decimal');}
         else {el.type='search';el.setAttribute('inputmode','search');}
-        el.setAttribute('enterkeyhint','done');
+        el.setAttribute('enterkeyhint','none');
       }else if(el.tagName==='TEXTAREA'){
         el.setAttribute('autocomplete','off');el.setAttribute('autocorrect','off');
         el.setAttribute('autocapitalize','off');el.setAttribute('spellcheck','false');
@@ -1501,7 +1533,7 @@ body.dark #billing-overlay button {
   body:not(.home-mode) .app-container > .qr-section .qr-box canvas,
   body:not(.home-mode) .app-container > .qr-section .qr-box img { width: min(29vh, 100%) !important; height: min(29vh, 100%) !important; max-height: 100%; }
   body:not(.home-mode) .app-container > .qr-section .amount-display { font-size: clamp(14px, 3.2vh, 22px); }
-  body:not(.home-mode) .app-container > .config-section { grid-area: config; min-height: 0; padding: 2px 4px; gap: 5px; align-content: center; }
+  body:not(.home-mode) .app-container > .config-section { grid-area: config; min-height: 0; padding: 2px 4px 0; gap: 5px; align-content: end; }
   body:not(.home-mode) .app-container > .config-section .input-group,
   body:not(.home-mode) .app-container > .config-section .input-group input { height: clamp(32px, 8vh, 42px); min-height: 0; }
   body:not(.home-mode) .app-container > .config-section .input-group input { font-size: clamp(11px, 2.3vh, 15px); padding-left: 9px; }
@@ -1597,6 +1629,56 @@ body.dark #billing-overlay button {
  #billing-overlay.open .billing-grand-loyalty-grid>div{padding:2px 1px!important}
  #billing-overlay.open .billing-grand-loyalty-values{margin-top:1px!important;gap:2px!important}
 }
+</style>
+
+<style id="calculator-qr-bill-details-feature">
+/* Isolated Calculator QR-card enhancement. Does not alter Billing/POS or calculator controls. */
+body:not(.home-mode) .qr-card{display:grid;grid-template-columns:minmax(104px,36%) minmax(0,1fr);grid-template-areas:"qr details" "amount details" "saved details";align-items:center;column-gap:10px;row-gap:5px;text-align:left;}
+body:not(.home-mode) .qr-card>.qr-box{grid-area:qr;justify-self:center;width:min(100%,160px);padding:5px;}
+body:not(.home-mode) .qr-card>.amount-display{grid-area:amount;justify-self:center;text-align:center;white-space:nowrap;}
+body:not(.home-mode) .qr-card>#calculator-bill-saved-status{grid-area:saved;justify-self:center;width:min(100%,260px);font-size:clamp(8px,1.1vh,11px);padding:4px 3px;text-align:center;}
+.calc-qr-info{grid-area:details;width:100%;min-width:0;display:flex;flex-direction:column;gap:5px;}
+.calc-qr-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:4px;align-content:center;}
+.calc-qr-meta{min-width:0;padding:5px 7px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:2px;}
+.calc-qr-meta small,.calc-qr-cash span,.calc-qr-refund span{font-size:9px;line-height:1.15;font-weight:800;letter-spacing:.25px;color:var(--muted);}
+.calc-qr-meta b{font-size:clamp(10px,1.45vh,13px);line-height:1.2;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.calc-qr-cash{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;padding:4px 7px;border-radius:8px;background:var(--surface);border:1px solid var(--border);}
+.calc-qr-cash input{width:55%;min-width:0;height:29px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:13px;font-weight:800;text-align:right;padding:3px 6px;outline:none;}
+.calc-qr-refund{min-width:0;padding:5px 8px;border-radius:8px;background:#07513f;display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 6px;}
+.calc-qr-refund span{color:#b7f3d8;}
+.calc-qr-refund strong{color:#fff!important;font-size:clamp(17px,2.4vh,23px);font-weight:900;line-height:1.1;text-align:right;white-space:nowrap;}
+.calc-qr-refund small{grid-column:1/-1;color:#fff;font-size:10px;font-weight:800;text-align:right;min-height:0;}
+@media(max-width:390px){body:not(.home-mode) .qr-card{grid-template-columns:minmax(90px,34%) minmax(0,1fr);column-gap:7px;padding:8px;}.calc-qr-meta{padding:4px 5px}.calc-qr-meta small,.calc-qr-cash span,.calc-qr-refund span{font-size:8px}.calc-qr-cash{padding:3px 5px}.calc-qr-cash input{height:27px;font-size:12px}}
+@media(orientation:landscape) and (max-height:800px) and (pointer:coarse){body:not(.home-mode) .app-container>.qr-section .qr-card{grid-template-columns:minmax(90px,34%) minmax(0,1fr);grid-template-areas:"qr details" "amount details" "saved details";padding:4px;gap:3px 7px;}.calc-qr-info{gap:3px}.calc-qr-meta-grid{gap:3px}.calc-qr-meta{padding:3px 5px}.calc-qr-cash{padding:2px 5px}.calc-qr-cash input{height:25px}.calc-qr-refund{padding:4px 6px}}
+/* QR scan improvement only: give the QR more room and compact its side details. */
+body:not(.home-mode) .app-container>.qr-section .qr-card{grid-template-columns:minmax(0,44%) minmax(0,1fr);column-gap:8px;}
+body:not(.home-mode) .app-container>.qr-section .qr-card>.qr-box{width:min(100%,190px);max-width:190px;}
+body:not(.home-mode) .app-container>.qr-section .qr-card>.qr-box canvas,
+body:not(.home-mode) .app-container>.qr-section .qr-card>.qr-box img{width:min(190px,100%)!important;height:auto!important;aspect-ratio:1/1;}
+body:not(.home-mode) .app-container>.qr-section .calc-qr-info{min-width:0;}
+@media(max-width:390px){body:not(.home-mode) .app-container>.qr-section .qr-card{grid-template-columns:minmax(0,42%) minmax(0,1fr);column-gap:6px;}}
+@media(orientation:landscape) and (max-height:800px) and (pointer:coarse){body:not(.home-mode) .app-container>.qr-section .qr-card{grid-template-columns:minmax(0,42%) minmax(0,1fr);column-gap:6px;}}
+</style>
+
+<style id="calculator-qr-info-theme-text-colors">
+/* Calculator QR payment details: readable text in both themes. */
+body:not(.dark) .calc-qr-info .calc-qr-meta small,
+body:not(.dark) .calc-qr-info .calc-qr-cash span,
+body:not(.dark) .calc-qr-info .calc-qr-refund span,
+body:not(.dark) .calc-qr-info .calc-qr-meta b,
+body:not(.dark) .calc-qr-info #calc-qr-due { color:#000 !important; }
+body:not(.dark) .calc-qr-info .calc-qr-cash input { color:#000 !important; }
+body:not(.dark) .calc-qr-info .calc-qr-cash input::placeholder { color:#000 !important; opacity:.62; }
+body.dark .calc-qr-info .calc-qr-meta small,
+body.dark .calc-qr-info .calc-qr-cash span,
+body.dark .calc-qr-info .calc-qr-meta b,
+body.dark .calc-qr-info #calc-qr-due { color:#fff !important; }
+body.dark .calc-qr-info .calc-qr-cash input { color:#fff !important; }
+body.dark .calc-qr-info .calc-qr-cash input::placeholder { color:#fff !important; opacity:.68; }
+/* Refund remains white on its green background for contrast in both themes. */
+.calc-qr-info .calc-qr-refund span,
+.calc-qr-info .calc-qr-refund strong,
+.calc-qr-info .calc-qr-refund small { color:#fff !important; }
 </style>
 </head>
 <body class="home-mode">
@@ -1929,6 +2011,17 @@ div>
         <div class="qr-card">
             <div class="qr-box" id="qrcode"></div>
             <div class="amount-display" id="qr-amount">₹ 0.00</div>
+            
+            <div class="calc-qr-info" id="calc-qr-info" aria-label="Current bill and cash refund details">
+              <div class="calc-qr-meta-grid">
+                <div class="calc-qr-meta"><small>DATE</small><b id="calc-qr-date">—</b></div>
+                <div class="calc-qr-meta"><small>TIME</small><b id="calc-qr-time">—</b></div>
+                <div class="calc-qr-meta"><small>BILL NO</small><b id="calc-qr-bill">—</b></div>
+                <div class="calc-qr-meta"><small>PREVIOUS BILL</small><b id="calc-qr-previous">₹0.00</b></div>
+                <label class="calc-qr-cash"><span>CASH RECEIVED</span><input id="calc-qr-cash-input" type="text" inputmode="none" readonly enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" min="0" step="0.01" placeholder="Enter cash" aria-label="Cash received"></label>
+                <div class="calc-qr-refund"><span id="calc-qr-refund-label">CASH REFUND</span><strong id="calc-qr-refund-amount">₹0.00</strong><small id="calc-qr-due"></small></div>
+              </div>
+            </div>
             <div id="calculator-bill-saved-status" role="status" aria-live="polite">✓ BILL SAVED SUCCESSFULLY</div>
         </div>
     </div>
@@ -2377,8 +2470,32 @@ function toggleTheme(){
         syncExpressionFromEditor(value,start,end);
     }
 
+    function clearCalculatorCashReceived() {
+        const cashField = document.getElementById('calc-qr-cash-input');
+        if (cashField) {
+            cashField.value = '';
+            cashField.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+
     function handlePress(key) {
         if(key!=='=') hideCalculatorBillSavedStatus();
+        // Cash Received uses the on-screen calculator keypad only; never open Gboard.
+        const cashInput = document.getElementById('calc-qr-cash-input');
+        if(cashInput && document.activeElement===cashInput){
+            let cashValue=String(cashInput.value||'');
+            if(key==='AC') cashValue='';
+            else if(key==='DEL') cashValue=cashValue.slice(0,-1);
+            else if(key==='.' || /^[0-9]$/.test(String(key))){
+                if(key!=='.' || !cashValue.includes('.')) cashValue+=String(key);
+            }else{
+                // Arithmetic operators and equals remain calculator-only controls.
+                return;
+            }
+            cashInput.value=cashValue;
+            cashInput.dispatchEvent(new Event('input',{bubbles:true}));
+            return;
+        }
         // When the calculation bar has focus, keypad keys operate at the native
         // caret/selection position instead of always appending to the end.
         if(document.activeElement===displayExpr){
@@ -2386,6 +2503,8 @@ function toggleTheme(){
             return;
         }
         if (justEvaluated && key !== '=') {
+            // Starting a fresh calculation also clears the previous cash/refund values.
+            clearCalculatorCashReceived();
             // Any edit after = starts a fresh/current invoice state. This prevents
             // the previous saved calculation (for example 120) from being printed
             // after the user starts entering a new calculation.
@@ -2404,6 +2523,8 @@ function toggleTheme(){
         }
 
         if (key === 'AC') {
+            // AC resets the calculator and its cash/refund fields together.
+            clearCalculatorCashReceived();
             expr = "0";
             openParenthesesCount = 0;
             justEvaluated = false;
@@ -4255,6 +4376,12 @@ function prepareCurrentBillForAction(){
   return {amount:billTotal,printUpi,bill,mrpTotal,billTotal,subtotal:mrpTotal,discount,total:billTotal};
 }
 function resetCalculatorAfterSave(){
+  // A saved invoice starts a new one: clear cash received and recalculate refund.
+  const cashReceivedField=document.getElementById('calc-qr-cash-input');
+  if(cashReceivedField){
+    cashReceivedField.value='';
+    cashReceivedField.dispatchEvent(new Event('input',{bubbles:true}));
+  }
   expr="0";
   lastCalculationExpression="";
   calculatorBranch.expr="0";
@@ -4356,13 +4483,18 @@ function saveCurrentBill(){
     }else setPrinterStatus('Calculator Invoice was not saved. Check the amount.','error');
   }catch(err){setPrinterStatus('Save failed: '+(err.message||err),'error');}
 }
-async function printCurrentPayment(){
+function printCurrentPayment(){
+  const amount=getCurrentCalculatorAmount();
+  if(!isFinite(amount)||amount<=0){setPrinterStatus("Enter a payment amount first","error");return;}
+  openCalculatorPrintChoice();
+}
+async function executeCalculatorPrint(includeQr){
   const amount=getCurrentCalculatorAmount();
   invoiceCustomizationMode='calculator';
   loadInvoiceDisplaySettings('calculator');
   if(!isFinite(amount)||amount<=0){setPrinterStatus("Enter a payment amount first","error");return;}
   const printUpi=upiInput.value.trim()||"";
-  if(!isValidUpiId(printUpi)){setPrinterStatus("Enter a valid UPI ID first","error");return;}
+  if(includeQr&&!isValidUpiId(printUpi)){setPrinterStatus("Enter a valid UPI ID first","error");return;}
   if(!printerReady()){openPrinterPanel();setPrinterStatus("Connect a printer first","error");return;}
   try{
     // One-tap print uses the same designed 58mm invoice layout as the invoice panel.
@@ -4385,7 +4517,7 @@ async function printCurrentPayment(){
     const billTotal=getInvoiceItems('calculator').reduce((sum,it)=>sum+(Number(it.rate ?? it.amount)||0)*(Number(it.qty)||0),0);
     const discount=Math.max(0,mrpTotal-billTotal);
     const total=billTotal;
-    const calcStudio=invoiceStudioEffectiveRead('calculator'); const calcPaper=String(calcStudio.paper)==='80'?'80':'58'; const x={mrpTotal,billTotal,subtotal:mrpTotal,discount,total,upi:printUpi,settingsMode:'calculator',paymentMode:'Cash',displaySettings:{...getInvoiceDisplaySettings('calculator'),...calcStudio,paper:calcPaper}};
+    const calcStudio=invoiceStudioEffectiveRead('calculator'); const calcPaper=String(calcStudio.paper)==='80'?'80':'58'; const x={mrpTotal,billTotal,subtotal:mrpTotal,discount,total,upi:printUpi,settingsMode:'calculator',paymentMode:'Cash',calculatorQrChoice:!!includeQr,displaySettings:{...getInvoiceDisplaySettings('calculator'),...calcStudio,paper:calcPaper}};
     setPrinterStatus("Printing invoice ("+(calcPaper==='80'?'80mm / 3-inch':'58mm / 2-inch')+")…");
     await writeBluetooth(makeCustomizedReceiptBytes(x));
     setPrinterStatus("Printed successfully","connected");
@@ -5469,6 +5601,7 @@ function makeCustomizedReceiptBytes(x){
   const st=invoiceStudioResolveFinalSettings(mode,(x&&x.displaySettings&&typeof x.displaySettings==='object')?x.displaySettings:getInvoiceDisplaySettings(mode));
   const paymentMode=String(x&&x.paymentMode||billingPaymentMode||'Cash');
   if(mode==='billing') st.qr = shouldShowInvoiceQRForPayment(paymentMode) && isValidUpiId(String(x&&x.upi||''));
+  else if(mode==='calculator' && typeof x.calculatorQrChoice==='boolean') st.qr = x.calculatorQrChoice;
   const W=String(st.paper||'58')==='80'?48:32;
   const text=buildPhysicalInvoiceText({...x,displaySettings:st});
   const upi=x.upi||'';
@@ -13378,10 +13511,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   var el=document.getElementById('billing-popup-received');
   if(!el)return;
   function fix(){
-    el.type='search';
-    el.setAttribute('inputmode','decimal');
-    el.setAttribute('enterkeyhint','done');
-    el.setAttribute('autocomplete','new-password');
+    el.type='text';
+    el.readOnly=true;
+    el.setAttribute('readonly','readonly');
+    el.setAttribute('inputmode','none');
+    el.setAttribute('enterkeyhint','none');
+    el.setAttribute('autocomplete','off');
     el.setAttribute('autocorrect','off');
     el.setAttribute('autocapitalize','off');
     el.setAttribute('spellcheck','false');
@@ -13409,12 +13544,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       } else if(el.tagName==='INPUT' && (!el.type || el.type==='text')){
         el.type='search';
       }
-      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocomplete','off');
       el.setAttribute('autocorrect','off');
       el.setAttribute('autocapitalize','off');
       el.setAttribute('spellcheck','false');
       if(el.getAttribute('inputmode')!=='decimal')el.setAttribute('inputmode','search');
-      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('enterkeyhint','none');
       el.setAttribute('data-form-type','other');
       el.setAttribute('data-lpignore','true');
       el.setAttribute('data-1p-ignore','true');
@@ -13452,12 +13587,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     selectors.forEach(function(sel){var root=document.querySelector(sel);if(!root)return;
       root.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),textarea').forEach(function(el){
         if(el.tagName==='INPUT' && (!el.type || el.type==='text'))el.type='search';
-        el.setAttribute('autocomplete','new-password');
+        el.setAttribute('autocomplete','off');
         el.setAttribute('autocorrect','off');
         el.setAttribute('autocapitalize','off');
         el.setAttribute('spellcheck','false');
         el.setAttribute('inputmode',el.type==='number'?'decimal':(el.type==='date'?'none':'search'));
-        el.setAttribute('enterkeyhint','done');
+        el.setAttribute('enterkeyhint','none');
         el.setAttribute('data-form-type','other');
         el.setAttribute('data-lpignore','true');
         el.setAttribute('data-1p-ignore','true');
@@ -13495,12 +13630,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         else if(el.type==='text' || !el.type)el.type='search';
         el.setAttribute('inputmode',numeric?'decimal':'search');
       } else if(el.type==='text' || !el.type)el.type='search';
-      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocomplete','off');
       el.setAttribute('autocorrect','off');
       el.setAttribute('autocapitalize','off');
       el.setAttribute('spellcheck','false');
       if(!el.hasAttribute('inputmode'))el.setAttribute('inputmode','search');
-      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('enterkeyhint','none');
       el.setAttribute('data-form-type','other');
       el.setAttribute('data-lpignore','true');
       el.setAttribute('data-1p-ignore','true');
@@ -13520,9 +13655,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var numeric=el.type==='number' || el.getAttribute('inputmode')==='decimal';
     if(el.type!=='search')el.type='search';
     el.setAttribute('inputmode',numeric?'decimal':'search');
-    el.setAttribute('autocomplete','new-password');
+    el.setAttribute('autocomplete','off');
     el.setAttribute('autocorrect','off');el.setAttribute('autocapitalize','off');el.setAttribute('spellcheck','false');
-    el.setAttribute('enterkeyhint','done');el.setAttribute('data-form-type','other');el.setAttribute('data-lpignore','true');el.setAttribute('data-1p-ignore','true');el.setAttribute('data-bwignore','true');
+    el.setAttribute('enterkeyhint','none');el.setAttribute('data-form-type','other');el.setAttribute('data-lpignore','true');el.setAttribute('data-1p-ignore','true');el.setAttribute('data-bwignore','true');
   },true);
   if(window.MutationObserver){var overlay=document.getElementById('invoice-custom-overlay');if(overlay)new MutationObserver(fixInvoiceStudioKeyboardFields).observe(overlay,{childList:true,subtree:true});}
 })();
@@ -13565,11 +13700,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
           } else {
             el.setAttribute('inputmode','text');
           }
-          el.setAttribute('autocomplete','new-password');
+          el.setAttribute('autocomplete','off');
           el.setAttribute('autocorrect','off');
           el.setAttribute('autocapitalize','off');
           el.setAttribute('spellcheck','false');
-          el.setAttribute('enterkeyhint','done');
+          el.setAttribute('enterkeyhint','none');
           el.setAttribute('data-form-type','other');
           el.setAttribute('data-lpignore','true');
           el.setAttribute('data-1p-ignore','true');
@@ -13622,11 +13757,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
          Item Database fields. Keep the existing value and input handler intact. */
       if(el.type!=='search')el.type='search';
       el.setAttribute('inputmode','search');
-      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocomplete','off');
       el.setAttribute('autocorrect','off');
       el.setAttribute('autocapitalize','off');
       el.setAttribute('spellcheck','false');
-      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('enterkeyhint','none');
       el.setAttribute('data-form-type','other');
       el.setAttribute('data-lpignore','true');
       el.setAttribute('data-1p-ignore','true');
@@ -13669,11 +13804,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         if(el.type==='number'){el.type='search';el.setAttribute('inputmode','decimal');}
         else if(!el.type||el.type==='text'){el.type='search';el.setAttribute('inputmode','search');}
       }else{el.setAttribute('inputmode','text');}
-      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocomplete','off');
       el.setAttribute('autocorrect','off');
       el.setAttribute('autocapitalize','off');
       el.setAttribute('spellcheck','false');
-      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('enterkeyhint','none');
       el.setAttribute('data-form-type','other');
       el.setAttribute('data-lpignore','true');
       el.setAttribute('data-1p-ignore','true');
@@ -13723,11 +13858,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       }else{
         el.setAttribute('inputmode','text');
       }
-      el.setAttribute('autocomplete','new-password');
+      el.setAttribute('autocomplete','off');
       el.setAttribute('autocorrect','off');
       el.setAttribute('autocapitalize','off');
       el.setAttribute('spellcheck','false');
-      el.setAttribute('enterkeyhint','done');
+      el.setAttribute('enterkeyhint','none');
       el.setAttribute('data-form-type','other');
       el.setAttribute('data-lpignore','true');
       el.setAttribute('data-1p-ignore','true');
@@ -13769,11 +13904,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(el.type !== 'search') el.type = 'search';
     el.setAttribute('name','cloud-oauth-client-id');
     el.setAttribute('inputmode','search');
-    el.setAttribute('autocomplete','new-password');
+    el.setAttribute('autocomplete','off');
     el.setAttribute('autocorrect','off');
     el.setAttribute('autocapitalize','off');
     el.setAttribute('spellcheck','false');
-    el.setAttribute('enterkeyhint','done');
+    el.setAttribute('enterkeyhint','none');
+    el.addEventListener('focus',function(){el.setAttribute('inputmode','none');},{passive:true});
     el.setAttribute('data-form-type','other');
     el.setAttribute('data-lpignore','true');
     el.setAttribute('data-1p-ignore','true');
@@ -13915,6 +14051,472 @@ body.dark:not(.home-mode) .app-container > .display-container .result-preview{
 @media(max-width:380px){
   body:not(.home-mode) .app-container > .display-container{gap:5px;padding-left:10px;padding-right:10px}
   body:not(.home-mode) .app-container > .display-container .result-preview{padding:8px 11px;font-size:30px!important}
+}
+</style>
+<style id="calculator-cash-received-mrp-keyboard-match">
+/* Match Calculator Cash Received keyboard behavior to the working Item Database MRP field. */
+#calc-qr-cash-input{
+  -webkit-user-modify:read-write-plaintext-only!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#calc-qr-cash-input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
+</style>
+<script id="calculator-cash-received-mrp-keyboard-match-js">
+(function(){
+  function fixCashReceivedKeyboard(){
+    var el=document.getElementById('calc-qr-cash-input');
+    if(!el)return;
+    el.type='text';
+    el.readOnly=true;
+    el.setAttribute('readonly','readonly');
+    el.setAttribute('inputmode','none');
+    el.setAttribute('autocomplete','off');
+    el.setAttribute('autocorrect','off');
+    el.setAttribute('autocapitalize','off');
+    el.setAttribute('spellcheck','false');
+    el.setAttribute('enterkeyhint','none');
+    el.setAttribute('data-form-type','other');
+    el.setAttribute('data-lpignore','true');
+    el.setAttribute('data-1p-ignore','true');
+    el.setAttribute('data-bwignore','true');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixCashReceivedKeyboard);
+  else fixCashReceivedKeyboard();
+})();
+</script>
+
+
+<script id="calculator-qr-bill-details-feature-script">
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const money=n=>'₹'+(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+ function refresh(){
+  const date=$('calc-qr-date'),time=$('calc-qr-time'),bill=$('calc-qr-bill'),prev=$('calc-qr-previous');
+  if(!date)return;
+  const now=new Date();
+  date.textContent=now.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  time.textContent=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  try{bill.textContent=typeof getSavedBillNo==='function'?getSavedBillNo('calculator'):'—';}catch(e){bill.textContent='—';}
+  try{const h=typeof getHistory==='function'?getHistory('calculator'):[];prev.textContent=money(h&&h.length?h[0].amount:0);}catch(e){prev.textContent=money(0);}
+  calculateRefund();
+ }
+ function calculateRefund(){
+  const input=$('calc-qr-cash-input'),out=$('calc-qr-refund-amount'),due=$('calc-qr-due'),label=$('calc-qr-refund-label');
+  if(!input||!out)return;
+  let total=0;try{total=typeof getCurrentCalculatorAmount==='function'?getCurrentCalculatorAmount():parseFloat($('qr-amount')?.textContent.replace(/[^0-9.]/g,''))||0;}catch(e){}
+  const raw=String(input.value||'').trim();
+  if(!raw){out.textContent=money(0);due.textContent='';label.textContent='CASH REFUND';return;}
+  const received=Math.max(0,Number(raw)||0),delta=Math.round((received-total)*100)/100;
+  if(delta>=0){label.textContent='CASH REFUND';out.textContent=money(delta);due.textContent='';}
+  else{label.textContent='BALANCE DUE';out.textContent=money(Math.abs(delta));due.textContent='';}
+ }
+ document.addEventListener('input',e=>{if(e.target&&e.target.id==='calc-qr-cash-input')calculateRefund();});
+ document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('.keypad'))setTimeout(refresh,0);});
+ document.addEventListener('DOMContentLoaded',refresh);
+ window.addEventListener('load',refresh);
+ const originalUpdateQR=window.updateQR;
+ if(typeof originalUpdateQR==='function'&&!originalUpdateQR.__qrBillDetailsWrapped){
+  const wrapped=function(){const result=originalUpdateQR.apply(this,arguments);refresh();return result;};
+  wrapped.__qrBillDetailsWrapped=true;window.updateQR=wrapped;
+ }
+ const originalSave=window.saveCalculatorInvoiceHistory;
+ if(typeof originalSave==='function'&&!originalSave.__qrBillDetailsWrapped){
+  const wrappedSave=function(){const result=originalSave.apply(this,arguments);if(result)setTimeout(refresh,0);return result;};
+  wrappedSave.__qrBillDetailsWrapped=true;window.saveCalculatorInvoiceHistory=wrappedSave;
+ }
+ setTimeout(refresh,300);
+})();
+</script>
+
+<style id="calculator-qr-theme-text-final-fix">
+/* Final high-specificity theme colours for every calculator QR payment detail. */
+body:not(.dark) #calc-qr-info .calc-qr-meta small,
+body:not(.dark) #calc-qr-info .calc-qr-meta b,
+body:not(.dark) #calc-qr-info .calc-qr-cash span,
+body:not(.dark) #calc-qr-info .calc-qr-cash input,
+body:not(.dark) #calc-qr-info .calc-qr-cash input::placeholder,
+body:not(.dark) #calc-qr-info .calc-qr-refund span,
+body:not(.dark) #calc-qr-info .calc-qr-refund strong,
+body:not(.dark) #calc-qr-info .calc-qr-refund small,
+body:not(.dark) #calc-qr-info #calc-qr-due {
+  color:#000 !important;
+}
+body:not(.dark) #calc-qr-info .calc-qr-refund {
+  background:#b7f3d8 !important;
+}
+body.dark #calc-qr-info .calc-qr-meta small,
+body.dark #calc-qr-info .calc-qr-meta b,
+body.dark #calc-qr-info .calc-qr-cash span,
+body.dark #calc-qr-info .calc-qr-cash input,
+body.dark #calc-qr-info .calc-qr-cash input::placeholder,
+body.dark #calc-qr-info .calc-qr-refund span,
+body.dark #calc-qr-info .calc-qr-refund strong,
+body.dark #calc-qr-info .calc-qr-refund small,
+body.dark #calc-qr-info #calc-qr-due {
+  color:#fff !important;
+}
+body.dark #calc-qr-info .calc-qr-refund {
+  background:#07513f !important;
+}
+</style>
+
+
+
+<style id="user-request-qr-only-and-saved-status-position">
+/* Requested isolated change: saved message below Cash Refund; QR image larger.
+   Existing calculator bars, grid position, sizes, and all other controls remain unchanged. */
+body:not(.home-mode) .qr-card>#calculator-bill-saved-status{
+  grid-area:auto !important;
+  width:100%;
+  justify-self:stretch;
+  margin-top:2px;
+}
+body:not(.home-mode) .qr-card>.qr-box{
+  width:min(100%,210px) !important;
+  max-width:210px !important;
+}
+body:not(.home-mode) .app-container>.qr-section .qr-card>.qr-box canvas,
+body:not(.home-mode) .app-container>.qr-section .qr-card>.qr-box img{
+  width:min(210px,100%) !important;
+  height:auto !important;
+  aspect-ratio:1/1;
+  max-width:100% !important;
+}
+</style>
+
+
+<style id="calculator-print-choice-styles">
+#calculator-print-choice{position:fixed;inset:0;z-index:2147483646;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55);padding:0;box-sizing:border-box}
+#calculator-print-choice.open{display:flex}
+#calculator-print-choice .cpc-sheet{width:100%;max-width:480px;background:var(--surface,#fff);color:var(--text,#111);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;box-shadow:0 -12px 40px rgba(0,0,0,.24);animation:cpc-slide-up .22s ease-out}
+#calculator-print-choice .cpc-handle{width:42px;height:4px;border-radius:9px;background:var(--muted,#999);opacity:.45;margin:0 auto 14px}
+#calculator-print-choice .cpc-title{text-align:center;font-size:16px;font-weight:900;margin:0 0 15px}
+#calculator-print-choice .cpc-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#calculator-print-choice .cpc-btn{min-height:58px;border:0;border-radius:13px;color:#fff;font-size:14px;font-weight:900;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+#calculator-print-choice .cpc-with{background:#16834a}
+#calculator-print-choice .cpc-without{background:#d97706}
+#calculator-print-choice .cpc-cancel{width:100%;height:42px;margin-top:10px;border:1px solid var(--border,#ddd);border-radius:11px;background:var(--surface2,#f5f5f5);color:var(--text,#222);font-weight:800}
+@keyframes cpc-slide-up{from{transform:translateY(100%);opacity:.7}to{transform:translateY(0);opacity:1}}
+@media(prefers-reduced-motion:reduce){#calculator-print-choice .cpc-sheet{animation:none}}
+</style>
+<div id="calculator-print-choice" aria-hidden="true" onclick="if(event.target===this)closeCalculatorPrintChoice()">
+  <div class="cpc-sheet" role="dialog" aria-modal="true" aria-labelledby="cpc-title">
+    <div class="cpc-handle"></div>
+    <div class="cpc-title" id="cpc-title">Choose Print Type</div>
+    <div class="cpc-actions">
+      <button type="button" class="cpc-btn cpc-with" onclick="chooseCalculatorPrintType(true)">▦ WITH QR</button>
+      <button type="button" class="cpc-btn cpc-without" onclick="chooseCalculatorPrintType(false)">▤ WITHOUT QR</button>
+    </div>
+    <button type="button" class="cpc-cancel" onclick="closeCalculatorPrintChoice()">CANCEL</button>
+  </div>
+</div>
+<script id="calculator-print-choice-logic">
+function openCalculatorPrintChoice(){
+  const modal=document.getElementById('calculator-print-choice');
+  if(!modal)return;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('modal-front-open');
+}
+function closeCalculatorPrintChoice(){
+  const modal=document.getElementById('calculator-print-choice');
+  if(!modal)return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('modal-front-open');
+}
+function chooseCalculatorPrintType(includeQr){
+  closeCalculatorPrintChoice();
+  executeCalculatorPrint(!!includeQr);
+}
+document.addEventListener('keydown',function(event){
+  if(event.key==='Escape'&&document.getElementById('calculator-print-choice')?.classList.contains('open'))closeCalculatorPrintChoice();
+});
+</script>
+
+
+<style id="calculator-landscape-qr-panel-layout-final-fix">
+/* Calculator landscape QR panel only: keep all surrounding controls unchanged. */
+@media (orientation:landscape) and (max-height:800px) and (pointer:coarse) {
+  body:not(.home-mode) .app-container > .qr-section .qr-card {
+    display:grid !important;
+    grid-template-columns:minmax(0,42%) minmax(0,1fr) !important;
+    grid-template-rows:minmax(0,1fr) auto auto !important;
+    grid-template-areas:
+      "qr details"
+      "amount details"
+      "saved details" !important;
+    align-items:center !important;
+    justify-items:stretch !important;
+    column-gap:6px !important;
+    row-gap:5px !important;
+    text-align:center !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .qr-card > .qr-box {
+    grid-area:qr !important; justify-self:center !important; align-self:center !important;
+    width:min(100%,190px) !important; max-width:190px !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .qr-card > .amount-display {
+    grid-area:amount !important; justify-self:center !important; align-self:center !important;
+    width:100% !important; text-align:center !important; white-space:nowrap !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .qr-card > #calculator-bill-saved-status {
+    grid-area:saved !important; justify-self:center !important; align-self:center !important;
+    width:min(100%,260px) !important; max-width:100% !important;
+    margin:2px auto 0 !important; text-align:center !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .qr-card > .calc-qr-info {
+    grid-area:details !important; align-self:center !important; justify-self:stretch !important;
+    width:100% !important; min-width:0 !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    grid-template-rows:repeat(3,minmax(0,auto)) !important;
+    grid-auto-flow:row !important;
+    gap:4px !important;
+    align-content:center !important;
+    width:100% !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta,
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-cash,
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-refund {
+    min-width:0 !important; width:auto !important; box-sizing:border-box !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-cash {
+    display:flex !important; flex-direction:column !important; align-items:stretch !important;
+    justify-content:center !important; gap:3px !important; padding:4px 6px !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-cash input {
+    width:100% !important; height:25px !important; box-sizing:border-box !important;
+    text-align:left !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-refund {
+    display:flex !important; flex-direction:column !important; align-items:stretch !important;
+    justify-content:center !important; gap:3px !important; padding:4px 6px !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-refund strong {
+    text-align:left !important; font-size:clamp(13px,2vh,20px) !important;
+  }
+}
+</style>
+
+
+<style id="calculator-landscape-cash-row-ui-only">
+@media (orientation: landscape) and (max-height: 800px) and (pointer: coarse) {
+  /* Keep the four bill metadata tiles in the QR card; place cash controls
+     in their own row directly above the UPI / Offer inputs. */
+  body:not(.home-mode) .app-container > .config-section {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    grid-template-areas: "cash refund" "upi offer" !important;
+    align-content: end !important;
+    align-items: stretch !important;
+    row-gap: 7px !important;
+    column-gap: 7px !important;
+  }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash { grid-area: cash; }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund { grid-area: refund; }
+  body:not(.home-mode) .app-container > .config-section > .input-group:not(.offer-message-group) { grid-area: upi; }
+  body:not(.home-mode) .app-container > .config-section > .input-group.offer-message-group { grid-area: offer; }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash,
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund {
+    box-sizing: border-box; width: 100%; min-width: 0; height: clamp(32px, 8vh, 42px);
+    min-height: 0; margin: 0; padding: 3px 7px; border-radius: 9px;
+  }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash span,
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund span { font-size: 9px; }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash input { height: 25px; width: 58%; font-size: 12px; }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund strong { font-size: clamp(14px, 2.2vh, 19px); }
+  body:not(.home-mode) .app-container > .config-section > .input-group,
+  body:not(.home-mode) .app-container > .config-section > .input-group input { height: clamp(32px, 8vh, 42px); min-height: 0; }
+}
+</style>
+<script id="calculator-landscape-cash-row-ui-only-js">
+(function(){
+  var originalParent=null, originalCashNext=null, originalRefundNext=null;
+  function placeCashControls(){
+    var section=document.querySelector('body:not(.home-mode) .app-container > .config-section');
+    var cash=document.querySelector('body:not(.home-mode) .calc-qr-cash');
+    var refund=document.querySelector('body:not(.home-mode) .calc-qr-refund');
+    if(!section || !cash || !refund) return;
+    if(!originalParent){ originalParent=cash.parentElement; originalCashNext=cash.nextSibling; originalRefundNext=refund.nextSibling; }
+    var landscape=window.matchMedia && window.matchMedia('(orientation: landscape) and (max-height: 800px) and (pointer: coarse)').matches;
+    if(!landscape){
+      if(cash.parentElement!==originalParent) originalParent.insertBefore(cash, originalCashNext);
+      if(refund.parentElement!==originalParent) originalParent.insertBefore(refund, originalRefundNext);
+      return;
+    }
+    if(cash.parentElement!==section) section.insertBefore(cash, section.firstChild);
+    if(refund.parentElement!==section) section.insertBefore(refund, section.children[1] || null);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', placeCashControls);
+  else placeCashControls();
+  window.addEventListener('resize', placeCashControls, {passive:true});
+  window.addEventListener('orientationchange', placeCashControls, {passive:true});
+})();
+</script>
+
+
+
+<style id="calculator-landscape-qr-meta-vertical-ui-only">
+/* Landscape UI only: enlarge the four QR-side details and stack them 1–4. */
+@media (orientation: landscape) and (max-height: 800px) and (pointer: coarse) {
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+    gap: 6px !important;
+    align-content: stretch !important;
+    height: 100% !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta {
+    display: flex !important;
+    min-height: 0 !important;
+    padding: 7px 10px !important;
+    gap: 4px !important;
+    justify-content: center !important;
+  }
+  /* 1 Date, 2 Time, 3 Previous Bill, 4 Bill No */
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta:nth-child(1) { order: 1 !important; }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta:nth-child(2) { order: 2 !important; }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta:nth-child(4) { order: 3 !important; }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta:nth-child(3) { order: 4 !important; }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta small {
+    font-size: clamp(10px, 1.35vh, 13px) !important;
+    line-height: 1.2 !important;
+  }
+  body:not(.home-mode) .app-container > .qr-section .calc-qr-meta-grid > .calc-qr-meta b {
+    font-size: clamp(13px, 2vh, 19px) !important;
+    line-height: 1.25 !important;
+  }
+}
+</style>
+
+
+<script id="calculator-live-clock-pos-bill-number-fix">
+(function(){
+  'use strict';
+  function updateCalculatorLiveBillMeta(){
+    const date=document.getElementById('calc-qr-date');
+    const time=document.getElementById('calc-qr-time');
+    const bill=document.getElementById('calc-qr-bill');
+    if(!date || !time || !bill) return;
+
+    const now=new Date();
+    date.textContent=now.toLocaleDateString('en-IN',{
+      day:'2-digit',month:'2-digit',year:'2-digit',timeZone:'Asia/Kolkata'
+    });
+    time.textContent=now.toLocaleTimeString('en-IN',{
+      hour:'2-digit',minute:'2-digit',second:'2-digit',
+      hour12:false,timeZone:'Asia/Kolkata'
+    });
+
+    try{
+      const amount=typeof getCurrentCalculatorAmount==='function'
+        ? Number(getCurrentCalculatorAmount())||0 : 0;
+      const hasCalculation=amount>0;
+      let billNo;
+      if(!hasCalculation &&
+         typeof getDailyNextBillNo==='function' &&
+         typeof getUniqueBillNo==='function'){
+        // Same DDMMYYHHMMSS live-number behavior as an empty POS Billing bill.
+        billNo=getUniqueBillNo(getDailyNextBillNo('calculator'),'calculator');
+      }else if(typeof getSavedBillNo==='function'){
+        // Keep the current bill number stable while a calculation is in progress.
+        billNo=getSavedBillNo('calculator');
+      }else{
+        billNo='—';
+      }
+      bill.textContent=String(billNo);
+    }catch(e){}
+
+    try{
+      if(typeof calculateRefund==='function') calculateRefund();
+    }catch(e){}
+  }
+
+  function start(){
+    updateCalculatorLiveBillMeta();
+    if(window.__calculatorLiveBillClock) clearInterval(window.__calculatorLiveBillClock);
+    window.__calculatorLiveBillClock=setInterval(updateCalculatorLiveBillMeta,1000);
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',start,{once:true});
+  }else{
+    start();
+  }
+  window.addEventListener('pageshow',updateCalculatorLiveBillMeta);
+})();
+</script>
+
+
+
+<style id="calculator-landscape-cash-refund-tall-bars-only">
+/* Landscape calculator only: stretch Cash Received and Cash Refund
+   through the available QR-side lower panel height; keep UPI/Offer rows intact. */
+@media (orientation: landscape) and (max-height: 800px) and (pointer: coarse) {
+  body:not(.home-mode) .app-container > .config-section {
+    grid-template-rows: minmax(0, 1fr) auto !important;
+    align-content: stretch !important;
+    align-items: stretch !important;
+  }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash,
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund {
+    height: 100% !important;
+    min-height: clamp(48px, 12vh, 82px) !important;
+    align-self: stretch !important;
+    justify-content: center !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash input {
+    height: clamp(28px, 5vh, 38px) !important;
+  }
+}
+</style>
+
+
+
+<style id="calculator-landscape-cash-refund-readable-text-fix">
+/* Make cash received and refund values comfortably readable in landscape. */
+@media (orientation: landscape) and (max-height: 800px) and (pointer: coarse) {
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash,
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund {
+    min-height: 58px !important;
+    height: clamp(58px, 10vh, 76px) !important;
+    padding: 7px 10px !important;
+    gap: 5px !important;
+    justify-content: center !important;
+  }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash span,
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund span {
+    font-size: clamp(11px, 1.7vh, 14px) !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+  }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-cash input {
+    width: 100% !important;
+    height: clamp(32px, 5.5vh, 42px) !important;
+    min-height: 32px !important;
+    padding: 4px 9px !important;
+    font-size: clamp(17px, 2.6vh, 22px) !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+    box-sizing: border-box !important;
+  }
+  body:not(.home-mode) .app-container > .config-section > .calc-qr-refund strong {
+    display: block !important;
+    font-size: clamp(20px, 3.2vh, 27px) !important;
+    line-height: 1.2 !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
 }
 </style>
 
