@@ -14349,26 +14349,83 @@ document.addEventListener('keydown',function(event){
 </style>
 <script id="calculator-landscape-cash-row-ui-only-js">
 (function(){
-  var originalParent=null, originalCashNext=null, originalRefundNext=null;
+  'use strict';
+
+  var cashPlaceholder=null;
+  var refundPlaceholder=null;
+  var media=window.matchMedia
+    ? window.matchMedia('(orientation: landscape) and (max-height: 800px) and (pointer: coarse)')
+    : null;
+  var scheduled=false;
+
   function placeCashControls(){
-    var section=document.querySelector('body:not(.home-mode) .app-container > .config-section');
-    var cash=document.querySelector('body:not(.home-mode) .calc-qr-cash');
-    var refund=document.querySelector('body:not(.home-mode) .calc-qr-refund');
+    scheduled=false;
+
+    /* The calculator starts hidden under body.home-mode.
+       Do not use body:not(.home-mode) in these lookups: that was the bug.
+       Wait until the calculator is actually opened. */
+    if(document.body.classList.contains('home-mode')) return;
+
+    var app=document.querySelector('.app-container');
+    var section=app && app.querySelector(':scope > .config-section');
+    var cash=app && app.querySelector('.calc-qr-cash');
+    var refund=app && app.querySelector('.calc-qr-refund');
     if(!section || !cash || !refund) return;
-    if(!originalParent){ originalParent=cash.parentElement; originalCashNext=cash.nextSibling; originalRefundNext=refund.nextSibling; }
-    var landscape=window.matchMedia && window.matchMedia('(orientation: landscape) and (max-height: 800px) and (pointer: coarse)').matches;
-    if(!landscape){
-      if(cash.parentElement!==originalParent) originalParent.insertBefore(cash, originalCashNext);
-      if(refund.parentElement!==originalParent) originalParent.insertBefore(refund, originalRefundNext);
-      return;
+
+    /* Save the true original positions once, before moving either control. */
+    if(!cashPlaceholder || !refundPlaceholder){
+      var originalParent=cash.parentNode;
+      if(!originalParent || refund.parentNode!==originalParent) return;
+
+      cashPlaceholder=document.createComment('calculator-cash-original-position');
+      refundPlaceholder=document.createComment('calculator-refund-original-position');
+      originalParent.insertBefore(cashPlaceholder,cash);
+      originalParent.insertBefore(refundPlaceholder,refund);
     }
-    if(cash.parentElement!==section) section.insertBefore(cash, section.firstChild);
-    if(refund.parentElement!==section) section.insertBefore(refund, section.children[1] || null);
+
+    if(media && media.matches){
+      if(cash.parentNode!==section) section.insertBefore(cash,section.firstChild);
+      if(refund.parentNode!==section) section.insertBefore(refund,cash.nextSibling);
+    }else{
+      if(cashPlaceholder.parentNode) cashPlaceholder.parentNode.insertBefore(cash,cashPlaceholder);
+      if(refundPlaceholder.parentNode) refundPlaceholder.parentNode.insertBefore(refund,refundPlaceholder);
+    }
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', placeCashControls);
-  else placeCashControls();
-  window.addEventListener('resize', placeCashControls, {passive:true});
-  window.addEventListener('orientationchange', placeCashControls, {passive:true});
+
+  function schedulePlacement(){
+    if(scheduled) return;
+    scheduled=true;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(placeCashControls);
+    });
+  }
+
+  /* Run on initial load and whenever the app is opened/closed.
+     The body begins in home-mode, so observing its class is essential. */
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',schedulePlacement,{once:true});
+  }else{
+    schedulePlacement();
+  }
+
+  var bodyObserver=new MutationObserver(function(records){
+    for(var i=0;i<records.length;i++){
+      if(records[i].attributeName==='class'){
+        schedulePlacement();
+        break;
+      }
+    }
+  });
+  bodyObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
+
+  window.addEventListener('resize',schedulePlacement,{passive:true});
+  window.addEventListener('orientationchange',schedulePlacement,{passive:true});
+  window.addEventListener('pageshow',schedulePlacement);
+
+  if(media){
+    if(media.addEventListener) media.addEventListener('change',schedulePlacement);
+    else if(media.addListener) media.addListener(schedulePlacement);
+  }
 })();
 </script>
 
