@@ -5856,7 +5856,7 @@ window.addEventListener("load",()=>{updateRecycleCount();loadInvoiceDisplaySetti
     <div class="billing-payment-popup-grid">
       <div class="billing-payment-popup-field">
         <label>PAYMENT RECEIVED</label>
-        <input id="billing-popup-received" type="search" inputmode="decimal" enterkeyhint="done" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="0" oninput="updateBillingPaymentPopup()">
+        <input id="billing-popup-received" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="0" oninput="updateBillingPaymentPopup()">
       </div>
       <div class="billing-payment-popup-change">
         <span id="billing-popup-change-label">CHANGE</span>
@@ -6888,6 +6888,10 @@ function billingKeyboardSelect(){
 function billingKeyboardKeydown(e){
   if(!billingKeyboardIsOpen())return;
   const target=e.target;
+  // Payment Details is a separate popup above Billing. Let the focused input
+  // receive every physical-keyboard key (including Ctrl/Alt and function keys)
+  // instead of interpreting those keys as Billing shortcuts.
+  if(target?.closest?.('#billing-payment-popup'))return;
   const tag=String(target?.tagName||'').toLowerCase();
   const editable=!!target?.isContentEditable || tag==='textarea' || tag==='select';
   const search=target?.id==='billing-search';
@@ -8421,6 +8425,13 @@ function openBillingPaymentPopup(){
   if(mode)mode.textContent='💳 Change Mode: '+String(billingPaymentMode||'Cash');
   updateBillingPaymentPopup();
   o.classList.add('open');o.setAttribute('aria-hidden','false');
+  // Focus synchronously inside the tap/click handler. Android WebView may
+  // suppress Gboard when focus is deferred to requestAnimationFrame/setTimeout.
+  // Keep this field as text + inputmode=decimal so Gboard opens its number keypad.
+  if(rec){
+    try{rec.focus();}catch(e){}
+    try{rec.select();}catch(e){}
+  }
 }
 function closeBillingPopupModePicker(){
   const p=document.getElementById('billing-popup-mode-picker');
@@ -13506,27 +13517,37 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 #barcodeStudio input::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important;appearance:none!important;}
 </style>
-<script id="billing-payment-details-keyboard-strip-fix">
+<style id="billing-payment-details-keyboard-strip-fix">
+/* Match the Item Database MRP field's Android search-style numeric input. */
+#billing-popup-received{
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+#billing-popup-received::-webkit-search-cancel-button{
+  display:none!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+}
+</style>
+<script id="billing-payment-details-keyboard-strip-fix-js">
 (function(){
+  // POS Billing Payment Details only. Match Item Database MRP keyboard behavior.
   var el=document.getElementById('billing-popup-received');
   if(!el)return;
-  function fix(){
-    el.type='text';
-    el.readOnly=true;
-    el.setAttribute('readonly','readonly');
-    el.setAttribute('inputmode','none');
-    el.setAttribute('enterkeyhint','none');
-    el.setAttribute('autocomplete','off');
-    el.setAttribute('autocorrect','off');
-    el.setAttribute('autocapitalize','off');
-    el.setAttribute('spellcheck','false');
-    el.setAttribute('data-form-type','other');
-    el.setAttribute('data-lpignore','true');
-    el.setAttribute('data-1p-ignore','true');
-    el.setAttribute('data-bwignore','true');
-  }
-  fix();
-  el.addEventListener('focus',fix,true);
+  el.type='search';
+  el.readOnly=false;
+  el.removeAttribute('readonly');
+  el.removeAttribute('disabled');
+  el.setAttribute('inputmode','decimal');
+  el.setAttribute('enterkeyhint','none');
+  el.setAttribute('autocomplete','off');
+  el.setAttribute('autocorrect','off');
+  el.setAttribute('autocapitalize','off');
+  el.setAttribute('spellcheck','false');
+  el.setAttribute('data-form-type','other');
+  el.setAttribute('data-lpignore','true');
+  el.setAttribute('data-1p-ignore','true');
+  el.setAttribute('data-bwignore','true');
 })();
 </script>
 
@@ -15743,3 +15764,57 @@ body.dark #billing-overlay.open .billing-search-results .billing-result.billing-
   background:#2563EB!important;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;
 }
 </style>
+
+
+<style id="billing-search-suggestions-front-fix">
+/* Portrait and landscape: keep POS item suggestions floating above the bill
+   without moving the existing Billing layout. */
+@media (pointer:coarse){
+  #billing-overlay.open #billing-search-results{
+    position:fixed!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:5px!important;
+    max-height:36vh!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    margin:0!important;
+    padding:5px!important;
+    box-sizing:border-box!important;
+    z-index:950!important;
+    border-radius:12px!important;
+    background:var(--surface,#fff)!important;
+    box-shadow:0 8px 24px rgba(0,0,0,.28)!important;
+  }
+  #billing-overlay.open #billing-search-results:empty{display:none!important;}
+}
+</style>
+<script id="billing-search-suggestions-front-fix-js">
+(function(){
+  function positionBillingSuggestions(){
+    if(!window.matchMedia('(pointer:coarse)').matches)return;
+    var overlay=document.getElementById('billing-overlay');
+    var input=document.getElementById('billing-search');
+    var row=overlay&&overlay.querySelector('.db-search-row');
+    var box=document.getElementById('billing-search-results');
+    if(!overlay||!overlay.classList.contains('open')||!input||!row||!box)return;
+    if(!String(input.value||'').trim()||!box.children.length){box.style.display='none';return;}
+    var rect=row.getBoundingClientRect();
+    box.style.left=Math.max(4,rect.left)+'px';
+    box.style.top=(rect.bottom+4)+'px';
+    box.style.width=Math.max(0,Math.min(rect.width,window.innerWidth-8))+'px';
+    box.style.display='flex';
+  }
+  function schedule(){requestAnimationFrame(positionBillingSuggestions);}
+  document.addEventListener('input',function(e){if(e.target&&e.target.id==='billing-search')schedule();},true);
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('#billing-overlay'))schedule();},true);
+  window.addEventListener('resize',schedule,{passive:true});
+  window.addEventListener('scroll',schedule,true);
+  document.addEventListener('DOMContentLoaded',function(){
+    var box=document.getElementById('billing-search-results');
+    if(box&&window.MutationObserver){new MutationObserver(schedule).observe(box,{childList:true,subtree:true});}
+  });
+  window.addEventListener('pageshow',schedule);
+  setTimeout(schedule,250);
+})();
+</script>
