@@ -2147,6 +2147,7 @@ div>
     let lastCalculationExpression = "0";
     let openParenthesesCount = 0;
     let justEvaluated = false;
+    let calculatorContinuationHistoryId = null;
 
     const displayExpr = document.getElementById("display-expr");
     const displayExprColored = document.getElementById("display-expr-colored");
@@ -2406,15 +2407,33 @@ function toggleTheme(){
         }
     }
 
+    function beginCalculatorContinuation(){
+        const previousExpression=String(lastCalculationExpression||expr||'0');
+        const previousHistory=getHistory('calculator');
+        const previousItem=previousHistory.find(item=>String(item.expression||'')===previousExpression);
+        calculatorContinuationHistoryId=previousItem ? previousItem.id : null;
+    }
+
     function editKeypadInsert(key){
         const input=displayExpr;
         let value=input.value||'';
         let start=input.selectionStart ?? value.length;
         let end=input.selectionEnd ?? start;
 
-        if(justEvaluated && key !== '=' && key !== 'AC' && key !== 'DEL' && key !== '%' && !isOp(key)){
+        if(justEvaluated && isOp(key)){
+            // Continue the saved expression and its existing invoice/Bill No.
+            beginCalculatorContinuation();
+            value=String(lastCalculationExpression||value||'0');
+            start=end=value.length;
+            value+=String(key);
+            start=end=value.length;
+            justEvaluated=false;
+            syncExpressionFromEditor(value,start,end);
+            return;
+        }else if(justEvaluated && key !== '=' && key !== 'AC' && key !== 'DEL' && key !== '%' && !isOp(key)){
             // Starting a new calculation from the editable calculation bar
             // must also detach the previous saved invoice state.
+            calculatorContinuationHistoryId=null;
             value='0';
             start=end=1;
             justEvaluated=false;
@@ -2424,6 +2443,7 @@ function toggleTheme(){
             setInvoiceItems([], 'calculator');
             setInvoiceSourceExpression('', 'calculator');
         }else if(key==='AC'){
+            calculatorContinuationHistoryId=null;
             value='0'; start=end=1;
         }else if(key==='DEL'){
             if(start!==end){ value=value.slice(0,start)+value.slice(end); end=start; }
@@ -2438,9 +2458,9 @@ function toggleTheme(){
                 const finalVal=evaluateGoogleLogic(calculationExpr);
                 if(!Number.isFinite(finalVal)) throw new Error('Invalid');
                 const rounded=Math.round(finalVal*10000000)/10000000;
-                expr=String(rounded); lastCalculationExpression=calculationExpr; justEvaluated=true; openParenthesesCount=0;
+                expr=calculationExpr; lastCalculationExpression=calculationExpr; justEvaluated=true; openParenthesesCount=0;
                 displayExpr.value=expr; displayExpr.setSelectionRange(expr.length,expr.length);
-                displayRes.innerText=''; updateQR(rounded); syncCalculatorItemsToInvoice(true);
+                displayRes.innerText=String(rounded); updateQR(rounded); syncCalculatorItemsToInvoice(true);
                 if(rounded>0){ saveHistoryItem(); showCalculatorBillSavedStatus('✓ CALCULATION SAVED SUCCESSFULLY'); const eqBtn=document.querySelector('.btn-eq'); if(eqBtn){const oldText=eqBtn.textContent;eqBtn.textContent='✓ Saved';eqBtn.classList.add('saved-feedback');clearTimeout(eqBtn._savedTimer);eqBtn._savedTimer=setTimeout(()=>{eqBtn.textContent=oldText;eqBtn.classList.remove('saved-feedback');},900);} }
             }catch(err){ displayRes.innerText=''; }
             return;
@@ -2503,17 +2523,19 @@ function toggleTheme(){
             return;
         }
         if (justEvaluated && key !== '=') {
-            // Starting a fresh calculation also clears the previous cash/refund values.
             clearCalculatorCashReceived();
-            // Any edit after = starts a fresh/current invoice state. This prevents
-            // the previous saved calculation (for example 120) from being printed
-            // after the user starts entering a new calculation.
             justEvaluated = false;
-            lastCalculationExpression = "";
-            calculatorBranch.lastCalculationExpression = "";
-            setInvoiceItems([], 'calculator');
-            setInvoiceSourceExpression("", 'calculator');
-            if (!isOp(key)) {
+            if(isOp(key)){
+                // + / - / × / ÷ continues the completed expression and the same saved Bill.
+                beginCalculatorContinuation();
+                expr=String(lastCalculationExpression||expr||'0');
+            }else{
+                // A new number starts a fresh calculation and invoice state.
+                calculatorContinuationHistoryId=null;
+                lastCalculationExpression = "";
+                calculatorBranch.lastCalculationExpression = "";
+                setInvoiceItems([], 'calculator');
+                setInvoiceSourceExpression("", 'calculator');
                 expr = "0";
             }
             calculatorBranch.expr = expr;
@@ -2525,6 +2547,7 @@ function toggleTheme(){
         if (key === 'AC') {
             // AC resets the calculator and its cash/refund fields together.
             clearCalculatorCashReceived();
+            calculatorContinuationHistoryId=null;
             expr = "0";
             openParenthesesCount = 0;
             justEvaluated = false;
@@ -2564,8 +2587,8 @@ function toggleTheme(){
                 if (!isNaN(finalVal) && isFinite(finalVal)) {
                     let roundedFinal = Math.round(finalVal * 10000000) / 10000000;
                     lastCalculationExpression = calculationExpr;
-                    expr = String(roundedFinal);
-                    displayRes.innerText = "";
+                    expr = calculationExpr;
+                    displayRes.innerText = String(roundedFinal);
                     updateQR(roundedFinal);
                     justEvaluated = true;
                     if (roundedFinal > 0) { saveHistoryItem(); showCalculatorBillSavedStatus('✓ CALCULATION SAVED SUCCESSFULLY'); const eqBtn=document.querySelector('.btn-eq'); if(eqBtn){ const oldText=eqBtn.textContent; eqBtn.textContent='✓ Saved'; eqBtn.classList.add('saved-feedback'); clearTimeout(eqBtn._savedTimer); eqBtn._savedTimer=setTimeout(()=>{eqBtn.textContent=oldText;eqBtn.classList.remove('saved-feedback');},900); } }
@@ -2589,6 +2612,10 @@ function toggleTheme(){
             } else {
                 expr += key;
             }
+        }
+        if(key!=='='){
+            lastCalculationExpression=expr;
+            calculatorBranch.lastCalculationExpression=expr;
         }
         updateDisplay();
     }
@@ -2940,19 +2967,41 @@ function toggleTheme(){
         function saveHistoryItem(){
         const amount = parseFloat(displayRes.innerText) || parseFloat(expr) || 0;
         const upi = upiInput.value.trim() || "";
-        if (!isFinite(amount) || amount <= 0) return;
+        if (!isFinite(amount) || amount <= 0) return false;
 
+        const expression = lastCalculationExpression || expr;
+        const history = getHistory("calculator");
+        if(calculatorContinuationHistoryId!==null){
+            const existing=history.find(item=>String(item.id)===String(calculatorContinuationHistoryId));
+            if(existing){
+                existing.amount=Math.round(amount*100)/100;
+                existing.expression=expression;
+                existing.upi=upi;
+                existing.time=new Date().toISOString();
+                existing.source='calculator';
+                localStorage.setItem(CALCULATOR_HISTORY_KEY,JSON.stringify(history.slice(0,50)));
+                return true;
+            }
+            calculatorContinuationHistoryId=null;
+        }
+        const duplicate = history[0] && history[0].amount === Math.round(amount * 100) / 100 && history[0].upi === upi && history[0].expression === expression && (Date.now() - new Date(history[0].time).getTime()) < 10000;
+        // Do not allocate another Bill No for a duplicate save/double tap.
+        if (duplicate) return false;
+
+        // Calculator's direct calculation-save path gets its own unique Bill No.
+        const bill = getUniqueBillNo("", "calculator");
         const item = {
             id: Date.now(),
+            source: "calculator",
             amount: Math.round(amount * 100) / 100,
-            expression: lastCalculationExpression || expr,
+            expression: expression,
             upi: upi,
+            bill: bill,
             time: new Date().toISOString()
         };
-        const history = getHistory("calculator");
-        const duplicate = history[0] && history[0].amount === item.amount && history[0].upi === item.upi && history[0].expression === item.expression && (Date.now() - new Date(history[0].time).getTime()) < 10000;
-        if(!duplicate) history.unshift(item);
+        history.unshift(item);
         localStorage.setItem(CALCULATOR_HISTORY_KEY, JSON.stringify(history.slice(0, 50)));
+        return true;
     }
 
     function setSalesDateToday(){ setSalesRange(1); }
