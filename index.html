@@ -661,9 +661,17 @@ body.modal-front-open{overflow:hidden!important}
 .invoice-template-card small{display:block;color:var(--muted);font-size:9px;margin:3px 0 6px}
 .invoice-template-card .acts{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.invoice-template-card button{height:28px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);font-size:9px;font-weight:900;color:var(--text)}
 .invoice-physical-live-wrap{margin:10px auto 0;padding:8px;background:#dfe3e8;border:1px solid var(--border);border-radius:12px;overflow:auto;display:flex;justify-content:center;align-items:flex-start;min-height:150px}
-.invoice-studio-physical-text{margin:0;padding:0;white-space:pre-wrap;word-break:break-word;font:inherit;line-height:inherit;color:inherit;background:transparent;text-align:left}.invoice-studio-physical-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:6px;text-align:center}.invoice-studio-physical-qr canvas,.invoice-studio-physical-qr img{display:block;width:145px!important;height:145px!important;max-width:100%;image-rendering:auto}.invoice-studio-qr-label{font-weight:900;font-size:10px;line-height:1.2;margin-top:4px}.invoice-studio-qr-upi{font-size:9px;line-height:1.2;margin-top:2px;word-break:break-all}@media(max-width:520px){.invoice-studio-physical-qr canvas,.invoice-studio-physical-qr img{width:128px!important;height:128px!important}}
+.invoice-studio-physical-text{margin:0;padding:0;white-space:pre-wrap;word-break:break-word;font:inherit;line-height:inherit;color:inherit;background:transparent;text-align:left}
+/* 80mm preview only: render the shop/company heading at the same double-size emphasis used by the physical ESC/POS print. */
+.invoice-physical-live-paper.paper-80 .invoice-studio-shop-heading{display:inline-block;vertical-align:baseline;width:100%;box-sizing:border-box;text-align:center;font-size:18px;line-height:1.2;font-weight:900;white-space:pre;}
+/* 58mm / 2-inch PREVIEW ONLY: mirror ESC/POS double-width + double-height shop-name printing.
+   The physical printer uses 16-character shop-name chunks at double size; keep each preview
+   chunk centered in the same 58mm paper width. All other receipt rows and print bytes stay unchanged. */
+.invoice-physical-live-paper.paper-58 .invoice-studio-shop-heading{display:block;width:100%;box-sizing:border-box;text-align:center;white-space:pre;font-size:20px;line-height:1.0;font-weight:900;}.invoice-studio-physical-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:6px;text-align:center}.invoice-studio-physical-qr canvas,.invoice-studio-physical-qr img{display:block;width:145px!important;height:145px!important;max-width:100%;image-rendering:auto}.invoice-studio-qr-label{font-weight:900;font-size:10px;line-height:1.2;margin-top:4px}.invoice-studio-qr-upi{font-size:9px;line-height:1.2;margin-top:2px;word-break:break-all}@media(max-width:520px){.invoice-studio-physical-qr canvas,.invoice-studio-physical-qr img{width:128px!important;height:128px!important}}
 .invoice-physical-live-paper{background:#fff;color:#000;box-shadow:0 3px 12px rgba(0,0,0,.18);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;padding:10px 7px;box-sizing:border-box;font-size:10px;line-height:1.25;text-align:left}
 .invoice-physical-live-paper.paper-58{width:220px;min-width:220px}.invoice-physical-live-paper.paper-80{width:302px;min-width:302px}
+/* 80mm / 3-inch BILL PREVIEW ONLY: keep the 48-column receipt grid on single lines. Physical printing is unchanged. */
+.invoice-physical-live-paper.paper-80 .invoice-studio-physical-text{font-size:9px;white-space:pre;word-break:normal;overflow-wrap:normal;}
 /* PRINT tab is intentionally a clean print-only workspace. Keep all invoice data/design fields out of this tab. */
 .invoice-custom-window.print-tab-active .invoice-custom-body{display:none!important}
 .invoice-custom-window.print-tab-active .invoice-studio-print-panel{min-height:calc(100dvh - 150px);box-sizing:border-box;padding:10px 20px 20px}
@@ -5217,12 +5225,45 @@ function invoiceStudioRenderPreview(){
     const previewSt=displaySettings;
     /* IMPORTANT: Preview uses the exact same physical text builder as Bluetooth/ESC-POS print. */
     let text=buildPhysicalInvoiceText({...x,displaySettings:displaySettings});
+    /* 58mm preview only: center the NO EXCHANGE / invoice title line exactly
+       like the physical receipt, regardless of a stale saved title alignment.
+       This changes preview presentation only; ESC/POS/physical output is untouched. */
+    if(String(previewSt.paper||'58')==='58' && previewSt.header){
+      const previewTitle=String(getInvoiceTitleName(invoiceCustomizationMode)||document.getElementById('invoice-title-input')?.value||'PAYMENT INVOICE').trim().toUpperCase();
+      if(previewTitle){
+        const titleLine=invoiceStudioAlignLine(previewTitle,'center',32);
+        const titlePattern=new RegExp('^\\s*'+previewTitle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*$','m');
+        if(titlePattern.test(text)) text=text.replace(titlePattern,titleLine);
+      }
+    }
     /* The physical printer removes this text block and prints a real ESC/POS QR immediately after it. */
     text=text.replace(/\n--- SCAN & PAY ---\nUPI ID: .*\nPay using any UPI app\n?/,'\n');
     target.innerHTML='';
     const pre=document.createElement('pre');
     pre.className='invoice-studio-physical-text';
-    pre.textContent=text;
+    /* Enlarge only the company/shop-name lines in the 3-inch preview.
+       Keep the same 24-character line breaks used by the physical printer;
+       2-inch preview and all print-generation code remain unchanged. */
+    if(String(previewSt.paper||'58')==='80'||String(previewSt.paper||'58')==='58'){
+      const lines=text.split('\n');
+      const shopName=String(getInvoiceShopName(invoiceCustomizationMode)||document.getElementById('invoice-shop-name')?.value||'YOUR SHOP NAME').trim().toUpperCase();
+      const shopWidth=String(previewSt.paper||'58')==='80'?48:32;
+      const shopLines=invoiceStudioShopPrintLines(shopName,'center',shopWidth);
+      const shopIndex=lines.findIndex((line,index)=>shopLines.every((shopLine,offset)=>lines[index+offset]===shopLine));
+      lines.forEach((line,index)=>{
+        if(index>0)pre.appendChild(document.createTextNode('\n'));
+        if(shopIndex>=0&&index>=shopIndex&&index<shopIndex+shopLines.length){
+          const heading=document.createElement('span');
+          heading.className='invoice-studio-shop-heading';
+          heading.textContent=line.trim();
+          pre.appendChild(heading);
+        }else{
+          pre.appendChild(document.createTextNode(line));
+        }
+      });
+    }else{
+      pre.textContent=text;
+    }
     target.appendChild(pre);
     if(previewSt.qr){
       const qrWrap=document.createElement('div');
@@ -5564,6 +5605,7 @@ function wrapReceipt(text,width=32){const out=[];String(text).split('\n').forEac
 function padL(s,w){s=String(s);return s.length>=w?s.slice(-w):' '.repeat(w-s.length)+s;}
 function padR(s,w){s=String(s);return s.length>=w?s.slice(0,w):s+' '.repeat(w-s.length);}
 function invoiceStudioAlignLine(value,align,width){const s=String(value??'');if(s.length>=width)return s.slice(0,width);if(align==='right')return ' '.repeat(width-s.length)+s;if(align==='center'){const left=Math.floor((width-s.length)/2);return ' '.repeat(left)+s+' '.repeat(width-s.length-left);}return s;}
+function invoiceStudioShopPrintLines(value,align,width){const s=String(value??'').trim().toUpperCase();const shopWidth=Math.max(1,Math.floor(Number(width||32)/2));const chunks=[];for(let i=0;i<s.length;i+=shopWidth)chunks.push(invoiceStudioAlignLine(s.slice(i,i+shopWidth),align||'center',shopWidth));return chunks.length?chunks:[''];}
 function buildPhysicalInvoiceText(x){
   const mode=(x&&x.settingsMode)?(x.settingsMode==='billing'?'billing':'calculator'):(invoiceCustomizationMode==='billing'?'billing':'calculator');
   // POS live preview reloads saved settings while typing. Keep the active Shop Name
@@ -5587,7 +5629,7 @@ function buildPhysicalInvoiceText(x){
   const lines=[];
   const ha=st.headerAlign||{};
   const ho=Array.isArray(st.headerOrder)?st.headerOrder:['shop','title','subtitle','meta'];
-  ho.forEach(k=>{if(k==='shop'&&st.shop)lines.push(invoiceStudioAlignLine(String(shop).trim().toUpperCase(),ha.shop||'center',W));if(k==='title'&&st.header)lines.push(invoiceStudioAlignLine(String(title).toUpperCase(),ha.title||'center',W));if(k==='subtitle'&&st.header&&st.subtitle)lines.push(invoiceStudioAlignLine(String(st.subtitle),ha.subtitle||'center',W));if(k==='meta'&&st.meta){lines.push('Bill No       : '+bill);lines.push('Date & Time   : '+now);}});
+  ho.forEach(k=>{if(k==='shop'&&st.shop)lines.push(...invoiceStudioShopPrintLines(shop,ha.shop||'center',W));if(k==='title'&&st.header)lines.push(invoiceStudioAlignLine(String(title).toUpperCase(),ha.title||'center',W));if(k==='subtitle'&&st.header&&st.subtitle)lines.push(invoiceStudioAlignLine(String(st.subtitle),ha.subtitle||'center',W));if(k==='meta'&&st.meta){lines.push('Bill No       : '+bill);lines.push('Date & Time   : '+now);}});
   if(st.shop||st.header||st.meta)lines.push('-'.repeat(W));
   if(mode==='billing'&&partyForInvoice&&((st.customerName&&partyForInvoice.name)||(st.customerMobile&&partyForInvoice.mobile)||(st.customerAddress&&partyForInvoice.address))){if(st.customerName&&partyForInvoice.name)lines.push('Customer      : '+String(partyForInvoice.name).slice(0,W-16));if(st.customerMobile&&partyForInvoice.mobile)lines.push('Mobile        : '+String(partyForInvoice.mobile).slice(0,W-16));if(st.customerAddress&&partyForInvoice.address)lines.push('Address       : '+String(partyForInvoice.address).slice(0,W-16));lines.push('-'.repeat(W));}
   if(st.calc){const calcExpr=getInvoiceExpression(mode);if(calcExpr&&calcExpr!=='0')lines.push('CALCULATION   : '+String(calcExpr).slice(0,W-16));}
@@ -5683,14 +5725,16 @@ function makeCustomizedReceiptBytes(x){
    */
   const rawLines=textNoQr.split('\n');
   const shopName=String(getInvoiceShopName(mode)||document.getElementById('invoice-shop-name')?.value||'YOUR SHOP NAME').trim().toUpperCase();
-  const shopIndex=rawLines.findIndex(line=>String(line).trim()===shopName);
+  const shopWidth=Math.max(1,Math.floor(W/2));
+  const shopLines=invoiceStudioShopPrintLines(shopName,'center',W);
+  const shopIndex=rawLines.findIndex((line,index)=>shopLines.every((shopLine,offset)=>rawLines[index+offset]===shopLine));
   let bodyParts=[utf8('\n')];
   if(shopIndex>=0){
     bodyParts.push(utf8(rawLines.slice(0,shopIndex).join('\n')+(shopIndex>0?'\n':'')));
-    bodyParts.push(new Uint8Array([0x1b,0x21,0x10])); // double-height only
-    bodyParts.push(utf8(rawLines[shopIndex]+'\n'));
-    bodyParts.push(new Uint8Array([0x1b,0x21,0x00])); // normal size
-    bodyParts.push(utf8(rawLines.slice(shopIndex+1).join('\n')));
+    bodyParts.push(new Uint8Array([0x1b,0x21,0x30])); // double-width + double-height shop name
+    bodyParts.push(utf8(rawLines.slice(shopIndex,shopIndex+shopLines.length).join('\n')+'\n'));
+    bodyParts.push(new Uint8Array([0x1b,0x21,0x00])); // restore normal size
+    bodyParts.push(utf8(rawLines.slice(shopIndex+shopLines.length).join('\n')));
   }else{
     bodyParts.push(utf8(textNoQr));
   }
@@ -5830,7 +5874,7 @@ window.addEventListener("load",()=>{updateRecycleCount();loadInvoiceDisplaySetti
 .db-note{font-size:10px;color:var(--muted);line-height:1.45;margin:8px 2px}
 @media(max-width:420px){.billing-cart{overflow:hidden}.billing-cart-head,.billing-cart-row{min-width:0;grid-template-columns:22px minmax(88px,1.55fr) 44px 72px 54px 62px 62px 28px;gap:2px}.billing-cart-head{font-size:8.5px;padding:8px 4px}.billing-cart-row{padding:5px 4px;min-height:44px;font-size:10.5px}.billing-cart-row input{height:32px;font-size:10.5px;padding:0 4px}.billing-cart-row .qty-stepper{grid-template-columns:26px minmax(30px,1fr) 26px;gap:1px}.billing-cart-row .qty-stepper button{width:26px;height:29px;font-size:14px}.billing-cart-row .cart-name{font-size:11px}.billing-cart-row .cart-del{width:28px;height:30px;font-size:17px}}
 
-.pos-invoice-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:10005;padding:14px}.pos-invoice-preview-overlay.open{display:flex}.pos-invoice-preview-window{width:min(760px,96vw);max-height:94vh;overflow:hidden;background:var(--card,#fff);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.pos-preview-header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid rgba(127,127,127,.2)}.pos-preview-title{font-size:18px;font-weight:800}.pos-preview-sub{font-size:12px;opacity:.65;margin-top:3px}.pos-preview-body{padding:16px;overflow:auto;max-height:calc(94vh - 76px)}.receipt-58-preview{width:58mm;max-width:100%;margin:0 auto;background:#fff;color:#000;padding:8px 6px;font-family:monospace;font-size:8.5px;line-height:1.2;box-sizing:border-box;box-shadow:0 2px 12px rgba(0,0,0,.16);overflow:hidden}.r58-head{text-align:center;border-bottom:1px dashed #000;padding-bottom:5px}.r58-head b,.r58-head strong,.r58-head small{display:block}.r58-head b{font-size:16px;font-weight:900;line-height:1.05}.r58-head strong{font-size:9px;margin-top:2px}.r58-head small{font-size:6.5px;margin-top:2px}.r58-meta{padding:4px 0}.r58-meta>div,.r58-summary>div,.r58-payment>div{display:flex;justify-content:space-between;gap:5px;margin:2px 0}.r58-meta b,.r58-summary b{font-weight:800;text-align:right}.r58-sep{text-align:center;white-space:nowrap;overflow:hidden}.r58-counts{display:grid;grid-template-columns:1fr auto 1fr auto;gap:3px;align-items:center;font-size:7.6px;font-weight:800;padding:2px 0}.r58-counts span:nth-of-type(2){text-align:right}.r58-counts b{text-align:right}.r58-table-head{display:grid;grid-template-columns:2fr 8fr 4fr 4fr 3fr 5fr;gap:0;font-weight:800;font-size:7.5px;white-space:nowrap}.r58-table-head span{text-align:right}.r58-table-head span:nth-child(2){text-align:left}.r58-item-line{display:grid;grid-template-columns:2fr 8fr 4fr 4fr 3fr 5fr;gap:0;white-space:nowrap;font-size:7.5px;min-width:0}.r58-item-line span{overflow:hidden;text-overflow:ellipsis;min-width:0}.r58-item-line b{text-align:right;min-width:0}.r58-item-line .r58-sl{text-align:center}.r58-item-line .r58-name{text-align:left}.r58-item-more{padding-left:0;font-size:7.8px;word-break:break-word}.r58-item-sep{text-align:center;font-size:7px;line-height:1;margin:2px 0;white-space:nowrap;overflow:hidden}.r58-summary{border-top:1px dashed #000;border-bottom:1px dashed #000;padding:4px 0;margin:4px 0}.r58-summary .payable{font-size:10.5px;font-weight:900;margin-top:3px}.r58-payment{font-size:7.5px}.r58-payment span{word-break:break-all;text-align:right}.r58-qr{text-align:center;border-top:1px dashed #000;margin-top:4px;padding-top:5px}.r58-qr #pos-preview-qr{display:inline-block}.r58-qr b,.r58-qr small{display:block}.r58-qr b{font-size:8px;margin-top:2px}.r58-qr small{font-size:6.8px}.r58-foot{text-align:center;border-top:1px dashed #000;margin-top:5px;padding-top:5px}.r58-foot b,.r58-foot strong,.r58-foot span{display:block}.r58-foot strong{font-size:9px;margin-top:2px}.r58-foot span{font-size:7px;margin-top:3px}.r58-physical-preview{max-width:100%;margin:0 auto;background:#fff;color:#000;padding:8px 6px;font-family:monospace;font-size:8.5px;line-height:1.2;box-sizing:border-box;box-shadow:0 2px 12px rgba(0,0,0,.16);overflow:hidden;white-space:normal}.r58-physical-line{height:1.2em;line-height:1.2em;white-space:pre;overflow:hidden}.r58-physical-shop{transform:scaleY(1.45);transform-origin:left center}.r58-physical-qr{text-align:center;background:#fff;color:#000;padding:5px 0;font-family:monospace;font-size:8px}.r58-physical-qr #pos-preview-qr{display:inline-block}.r58-physical-qr b,.r58-physical-qr small{display:block}.r58-physical-qr small{font-size:6.8px}.pos-preview-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.cart-name-edit{min-width:0;width:100%;box-sizing:border-box}.cart-name-edit:focus{outline:2px solid #4f8cff}
+.pos-invoice-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:10005;padding:14px}.pos-invoice-preview-overlay.open{display:flex}.pos-invoice-preview-window{width:min(760px,96vw);max-height:94vh;overflow:hidden;background:var(--card,#fff);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.pos-preview-header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid rgba(127,127,127,.2)}.pos-preview-title{font-size:18px;font-weight:800}.pos-preview-sub{font-size:12px;opacity:.65;margin-top:3px}.pos-preview-body{padding:16px;overflow:auto;max-height:calc(94vh - 76px)}.receipt-58-preview{width:58mm;max-width:100%;margin:0 auto;background:#fff;color:#000;padding:8px 6px;font-family:monospace;font-size:8.5px;line-height:1.2;box-sizing:border-box;box-shadow:0 2px 12px rgba(0,0,0,.16);overflow:hidden}.r58-head{text-align:center;border-bottom:1px dashed #000;padding-bottom:5px}.r58-head b,.r58-head strong,.r58-head small{display:block}.r58-head b{font-size:16px;font-weight:900;line-height:1.05}.r58-head strong{font-size:9px;margin-top:2px}.r58-head small{font-size:6.5px;margin-top:2px}.r58-meta{padding:4px 0}.r58-meta>div,.r58-summary>div,.r58-payment>div{display:flex;justify-content:space-between;gap:5px;margin:2px 0}.r58-meta b,.r58-summary b{font-weight:800;text-align:right}.r58-sep{text-align:center;white-space:nowrap;overflow:hidden}.r58-counts{display:grid;grid-template-columns:1fr auto 1fr auto;gap:3px;align-items:center;font-size:7.6px;font-weight:800;padding:2px 0}.r58-counts span:nth-of-type(2){text-align:right}.r58-counts b{text-align:right}.r58-table-head{display:grid;grid-template-columns:2fr 8fr 4fr 4fr 3fr 5fr;gap:0;font-weight:800;font-size:7.5px;white-space:nowrap}.r58-table-head span{text-align:right}.r58-table-head span:nth-child(2){text-align:left}.r58-item-line{display:grid;grid-template-columns:2fr 8fr 4fr 4fr 3fr 5fr;gap:0;white-space:nowrap;font-size:7.5px;min-width:0}.r58-item-line span{overflow:hidden;text-overflow:ellipsis;min-width:0}.r58-item-line b{text-align:right;min-width:0}.r58-item-line .r58-sl{text-align:center}.r58-item-line .r58-name{text-align:left}.r58-item-more{padding-left:0;font-size:7.8px;word-break:break-word}.r58-item-sep{text-align:center;font-size:7px;line-height:1;margin:2px 0;white-space:nowrap;overflow:hidden}.r58-summary{border-top:1px dashed #000;border-bottom:1px dashed #000;padding:4px 0;margin:4px 0}.r58-summary .payable{font-size:10.5px;font-weight:900;margin-top:3px}.r58-payment{font-size:7.5px}.r58-payment span{word-break:break-all;text-align:right}.r58-qr{text-align:center;border-top:1px dashed #000;margin-top:4px;padding-top:5px}.r58-qr #pos-preview-qr{display:inline-block}.r58-qr b,.r58-qr small{display:block}.r58-qr b{font-size:8px;margin-top:2px}.r58-qr small{font-size:6.8px}.r58-foot{text-align:center;border-top:1px dashed #000;margin-top:5px;padding-top:5px}.r58-foot b,.r58-foot strong,.r58-foot span{display:block}.r58-foot strong{font-size:9px;margin-top:2px}.r58-foot span{font-size:7px;margin-top:3px}.r58-physical-preview{max-width:100%;margin:0 auto;background:#fff;color:#000;padding:8px 6px;font-family:monospace;font-size:8.5px;line-height:1.2;box-sizing:border-box;box-shadow:0 2px 12px rgba(0,0,0,.16);overflow:hidden;white-space:normal}.r58-physical-line{height:1.2em;line-height:1.2em;white-space:pre;overflow:hidden}.r58-physical-shop{transform:scale(2,1.45);transform-origin:center center}.r58-physical-qr{text-align:center;background:#fff;color:#000;padding:5px 0;font-family:monospace;font-size:8px}.r58-physical-qr #pos-preview-qr{display:inline-block}.r58-physical-qr b,.r58-physical-qr small{display:block}.r58-physical-qr small{font-size:6.8px}.pos-preview-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.cart-name-edit{min-width:0;width:100%;box-sizing:border-box}.cart-name-edit:focus{outline:2px solid #4f8cff}
 @media(max-width:560px){.pos-preview-actions{grid-template-columns:1fr}.receipt-58-preview{font-size:10px}}
 @media print{body>*{display:none!important}.pos-invoice-preview-overlay{display:block!important;position:static;background:#fff;padding:0}.pos-invoice-preview-window{width:58mm;max-height:none;box-shadow:none;border-radius:0}.pos-preview-header,.pos-preview-actions{display:none}.pos-preview-body{padding:0;max-height:none;overflow:visible}.receipt-58-preview,.r58-physical-preview{box-shadow:none;max-width:none;margin:0;padding:0;font-size:8.5px;line-height:1.2}}
 </style>
@@ -12482,6 +12526,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 .is-coupon-picker-list{overflow:auto;padding:10px 12px 14px}
 .is-coupon-card{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:11px;margin-bottom:8px;border:1px solid var(--border);border-radius:14px;background:var(--surface2)}
 .is-coupon-card:last-child{margin-bottom:0}
+.is-coupon-picker-use-selected{width:100%;height:38px;margin-top:7px;border:0;border-radius:10px;background:#16834a;color:#fff;font-size:11px;font-weight:900}
+.is-coupon-card-select{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted);margin-top:6px}.is-coupon-card-select input{width:16px;height:16px;accent-color:var(--blue)}
 .is-coupon-card-name{font-size:12px;font-weight:900;overflow-wrap:anywhere}
 .is-coupon-card-meta{font-size:9px;color:var(--muted);margin-top:3px}
 .is-coupon-card-acts{display:flex;gap:5px}
@@ -12498,6 +12544,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     </div>
     <div class="is-coupon-picker-actions">
       <button class="is-coupon-picker-new" type="button" onclick="invoiceStudioNewCouponFromStudio()">＋ CREATE / DESIGN NEW COUPON</button>
+      <button class="is-coupon-picker-use-selected" type="button" onclick="invoiceStudioUseSelectedCoupons()">USE SELECTED COUPONS</button>
+      <div class="is-coupon-picker-sub" style="margin-top:6px">Select one or more designs. Each selected coupon prints separately below the invoice.</div>
     </div>
     <div id="invoice-studio-coupon-list" class="is-coupon-picker-list"></div>
   </div>
@@ -12544,9 +12592,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         </div>
       </div>
     </div>
-    <div class="cv-bottom">
-      <div class="cv-bottom-actions"><button class="cv-btn" onclick="couponVoucherPreview()">👁 PREVIEW</button><button class="cv-btn primary" onclick="couponVoucherPrint()">🖨 PRINT</button><button class="cv-btn" onclick="couponVoucherSave()">💾 SAVE</button></div>
-    </div>
+
   </div>
 </div>
 
@@ -12579,7 +12625,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       const paper=String(x.paper)==='80'?'80mm / 3-inch':'AUTO / 58mm';
       return '<div class="is-coupon-card">'+
         '<div><div class="is-coupon-card-name">🎟️ '+esc(x.name||('Coupon '+(i+1)))+'</div>'+
-        '<div class="is-coupon-card-meta">'+paper+' • '+(Array.isArray(x.texts)?x.texts.length:0)+' text lines</div></div>'+
+        '<div class="is-coupon-card-meta">'+paper+' • '+(Array.isArray(x.texts)?x.texts.length:0)+' text lines</div>'+
+        '<label class="is-coupon-card-select"><input type="checkbox" class="is-coupon-select" value="'+i+'"> Select for billing</label></div>'+
         '<div class="is-coupon-card-acts">'+
         '<button class="use" type="button" onclick="invoiceStudioUseCoupon('+i+')">USE</button>'+
         '<button type="button" onclick="invoiceStudioEditCoupon('+i+')">EDIT</button>'+
@@ -12602,17 +12649,25 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const o=$('invoice-studio-coupon-picker');
     if(o){o.classList.remove('open');o.setAttribute('aria-hidden','true');}
   };
-  window.invoiceStudioUseCoupon=function(i){
-    const x=couponLibrary()[i];if(!x)return;
+  function activateCoupons(items){
+    const selected=(Array.isArray(items)?items:[]).filter(x=>x&&Array.isArray(x.texts));
+    if(!selected.length){alert('Please select at least one saved coupon.');return;}
     try{
-      localStorage.setItem('pos_coupon_voucher_active_v1',JSON.stringify(x));
-      localStorage.setItem('pos_coupon_voucher_v1',JSON.stringify({paper:x.paper||'auto',texts:Array.isArray(x.texts)?x.texts:[]}));
+      localStorage.setItem('pos_coupon_voucher_active_list_v1',JSON.stringify(selected));
+      localStorage.setItem('pos_coupon_voucher_active_v1',JSON.stringify(selected[0]));
+      localStorage.setItem('pos_coupon_voucher_v1',JSON.stringify({paper:selected[0].paper||'auto',texts:Array.isArray(selected[0].texts)?selected[0].texts:[]}));
     }catch(e){}
     invoiceStudioCloseCouponPicker();
     if(typeof window.openCouponVoucher==='function'){
       window.couponVoucherFromStudio=true;
       window.openCouponVoucher();
     }
+  }
+  window.invoiceStudioUseCoupon=function(i){const x=couponLibrary()[i];if(!x)return;activateCoupons([x]);};
+  window.invoiceStudioUseSelectedCoupons=function(){
+    const box=$('invoice-studio-coupon-list');if(!box)return;
+    const indexes=Array.from(box.querySelectorAll('.is-coupon-select:checked')).map(e=>Number(e.value)).filter(Number.isInteger);
+    const lib=couponLibrary();activateCoupons(indexes.map(i=>lib[i]).filter(Boolean));
   };
   window.invoiceStudioEditCoupon=window.invoiceStudioUseCoupon;
   window.invoiceStudioNewCouponFromStudio=function(){
@@ -12741,7 +12796,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function cv2Read(){
     try{
-      const raw=JSON.parse(localStorage.getItem(CV2_KEY)||'null');
+      /* The Invoice Studio selection is the active voucher. Keep it as the
+         source of truth when the editor is closed and opened again. */
+      const activeList=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_v1')||'null');
+      const active=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_v1')||'null');
+      const raw=(Array.isArray(activeList)&&activeList.length)?activeList[0]:(active||JSON.parse(localStorage.getItem(CV2_KEY)||'null'));
       if(raw)cv2State=cv2Sanitize(raw);
     }catch(e){}
     if(cv2State.paper==='auto' && !cv2State.designWidthMm)cv2State.designWidthMm=Number(cv2PrinterPaper())===80?80:58;
@@ -12766,27 +12825,24 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       ];
       cv2Write();
     }
-    if(cv2State.texts.length<6){
-      const defaults=[
-        {text:'GIFT VOUCHER',fontSize:26,align:'center',weight:'bold'},
-        {text:'GET ₹50 OFF',fontSize:30,align:'center',weight:'bold'},
-        {text:'ON YOUR NEXT PURCHASE',fontSize:18,align:'center',weight:'normal'},
-        {text:'VALIDITY - WITHIN 15 DAYS',fontSize:16,align:'center',weight:'normal'},
-        {text:'COUPON CODE: SAVE50',fontSize:14,align:'center',weight:'bold'},
-        {text:'THANK YOU!  VISIT AGAIN!',fontSize:13,align:'center',weight:'normal'}
-      ];
-      for(let i=cv2State.texts.length;i<6;i++){
-        const d=defaults[i];
-        cv2State.texts.push({id:'cv_default_'+i+'_'+Date.now(),text:d.text,xPct:.08,yPct:[.06,.25,.47,.64,.78,.90][i],widthPct:.84,fontSize:d.fontSize,align:d.align,weight:d.weight,enabled:true});
-      }
-      cv2Write();
-    }
+    /* Preserve the exact number of lines in a saved custom voucher.
+       Starter lines are created only when the design is completely empty. */
     return cv2State;
   }
 
   function cv2Write(){
     try{
       localStorage.setItem(CV2_KEY,JSON.stringify(cv2State));
+      /* Keep an already-selected Studio voucher in sync with editor changes. */
+      const activeRaw=localStorage.getItem('pos_coupon_voucher_active_v1');
+      if(activeRaw){
+        let active={};
+        try{active=JSON.parse(activeRaw)||{}}catch(e){}
+        const updated={...active,...cv2State};
+        localStorage.setItem('pos_coupon_voucher_active_v1',JSON.stringify(updated));
+        let activeList=[];try{activeList=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_v1')||'[]')}catch(e){}
+        if(Array.isArray(activeList)&&activeList.length){activeList[0]={...activeList[0],...cv2State};localStorage.setItem('pos_coupon_voucher_active_list_v1',JSON.stringify(activeList));}
+      }
       const en=cv$('cv-enabled');
       if(en)localStorage.setItem('pos_coupon_voucher_enabled_v1',en.checked?'1':'0');
     }catch(e){}
@@ -13044,11 +13100,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const t=cv2State.texts.find(x=>x.id===cv2SelectedId);
     if(t){
       if(cv$('cv-text'))cv$('cv-text').value=t.text||'';
-      if(cv$('cv-size'))cv$('cv-size').value=Number(t.fontSize)||24;
+      if(cv$('cv-size') && document.activeElement!==cv$('cv-size'))cv$('cv-size').value=Number(t.fontSize)||24;
       if(cv$('cv-weight'))cv$('cv-weight').value=t.weight||'normal';
     }else{
       if(cv$('cv-text'))cv$('cv-text').value='';
-      if(cv$('cv-size'))cv$('cv-size').value=24;
+      if(cv$('cv-size') && document.activeElement!==cv$('cv-size'))cv$('cv-size').value=24;
       if(cv$('cv-weight'))cv$('cv-weight').value='normal';
     }
     cv2RenderSaved();cv2RenderLineControls();
@@ -13093,8 +13149,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 
   function cv2LiveText(){const t=cv2State.texts.find(x=>x.id===cv2SelectedId);if(!t)return;t.text=cv$('cv-text')?.value||'';cv2Write();cv2EditorRenderActual()}
-  function cv2LiveSize(){const t=cv2State.texts.find(x=>x.id===cv2SelectedId);if(!t)return;t.fontSize=Math.max(8,Math.min(96,Number(cv$('cv-size')?.value)||24));cv2Write();cv2EditorRenderActual()}
-  function cv2Update(){const t=cv2State.texts.find(x=>x.id===cv2SelectedId);if(!t)return;cv2PushUndo();t.text=cv$('cv-text')?.value||'';t.fontSize=Math.max(8,Math.min(96,Number(cv$('cv-size')?.value)||24));t.align='center';t.weight=cv$('cv-weight')?.value||'normal';cv2Write();cv2EditorRenderActual()}
+  function cv2LiveSize(){const t=cv2State.texts.find(x=>x.id===cv2SelectedId);const input=cv$('cv-size');if(!t||!input||input.value==='')return;const size=Number(input.value);if(!Number.isFinite(size))return;t.fontSize=Math.max(8,Math.min(96,size));cv2Write();cv2EditorRenderActual()}
+  function cv2Update(){const t=cv2State.texts.find(x=>x.id===cv2SelectedId);if(!t)return;cv2PushUndo();t.text=cv$('cv-text')?.value||'';const sizeInput=cv$('cv-size');if(sizeInput&&sizeInput.value!==''){const size=Number(sizeInput.value);if(Number.isFinite(size))t.fontSize=Math.max(8,Math.min(96,size));}t.align='center';t.weight=cv$('cv-weight')?.value||'normal';cv2Write();cv2EditorRenderActual()}
   function cv2Delete(){if(!cv2SelectedId)return;cv2PushUndo();cv2State.texts=cv2State.texts.filter(x=>x.id!==cv2SelectedId);cv2SelectedId=null;cv2ReflowRows();cv2Write();cv2EditorRenderActual()}
   function cv2Duplicate(){const t=cv2State.texts.find(x=>x.id===cv2SelectedId);if(!t||cv2State.texts.length>=CV2_MAX_TEXTS)return;cv2PushUndo();const n={...t,id:'cv_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),xPct:Math.min(1,t.xPct+.04),yPct:Math.min(1,t.yPct+.04)};cv2State.texts.push(n);cv2SelectedId=n.id;cv2Write();cv2EditorRenderActual()}
   function cv2Move(dir){const t=cv2State.texts.find(x=>x.id===cv2SelectedId);if(!t||((dir!=='up')&&(dir!=='down')))return;cv2PushUndo();const step=.02;if(dir==='up')t.yPct=Math.max(0,t.yPct-step);else t.yPct=Math.min(1,t.yPct+step);cv2Write();cv2EditorRenderActual()}
@@ -13167,9 +13223,19 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const a=cv2Library();a.splice(i,1);try{localStorage.setItem(CV2_LIB,JSON.stringify(a));cv2RenderSaved()}catch(e){}
   }
 
+  function cv2ActiveCoupons(){
+    try{
+      const list=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_v1')||'null');
+      if(Array.isArray(list)&&list.length)return list.filter(x=>x&&Array.isArray(x.texts));
+      const one=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_v1')||'null');
+      return one&&Array.isArray(one.texts)?[one]:[];
+    }catch(e){return[]}
+  }
   function cv2Enabled(){
     try{
       if(localStorage.getItem('pos_coupon_voucher_enabled_v1')!=='1')return false;
+      const list=cv2ActiveCoupons();
+      if(list.length)return list.some(x=>x.texts.some(t=>t&&t.enabled!==false&&String(t.text||'').trim()));
       return cv2State.texts.some(t=>String(t.text||'').trim());
     }catch(e){return false}
   }
@@ -13243,7 +13309,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   function cv2ClosePreview(){const o=cv$('cv2-physical-preview');if(o)o.classList.remove('open');cv2PreviewOpen=false}
 
-  function cv2CouponTextBytes(paper){
+  function cv2CouponTextBytes(paper,options){
+    options=options||{};
     const pp=String(paper)==='80'?'80':'58';
     const p=cv2Profile(pp), W=p.columns;
     const init=new Uint8Array([0x1b,0x40]);
@@ -13256,7 +13323,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const size2=new Uint8Array([0x1b,0x21,0x30]);
     const feed=new Uint8Array([0x1b,0x64,0x03]),cut=new Uint8Array([0x1d,0x56,0x00]);
     const escAscii=v=>String(v||'').replace(/₹/g,'Rs ').replace(/[^\x20-\x7E]/g,'?').replace(/\r/g,'');
-    const parts=[init,center,normalSize,boldOff,utf8('-'.repeat(W)+'\n')];
+    const parts=[...(options.includeInit===false?[]:[init]),center,normalSize,boldOff,utf8('-'.repeat(W)+'\n')];
     const rows=cv2State.texts.slice(0,CV2_MAX_TEXTS).filter(t=>t.enabled!==false&&String(t.text||'').trim());
     const fitWidth=(t)=>{
       const s=Number(t.fontSize)||24;
@@ -13282,7 +13349,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       parts.push(normalSize,boldOff);
       if(i<rows.length-1)parts.push(utf8('\n'));
     });
-    parts.push(left,normalSize,boldOff,utf8('-'.repeat(W)+'\n'),feed,cut);
+    parts.push(left,normalSize,boldOff,utf8('-'.repeat(W)+'\n'));
+    if(options.includeFinish!==false)parts.push(feed,cut);
     return concatBytes(...parts);
   }
 
@@ -13315,22 +13383,42 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    * same physical-render canvas; it never calculates coupon layout itself.
    */
   function cv2PrintNode(paper){
-    /* COUPON PREVIEW SOURCE OF TRUTH:
-       use the exact same physical-render canvas used by the coupon printer model.
-       Invoice Preview must never rebuild coupon text with a second layout engine. */
+    /* Render each selected design independently using the same physical renderer. */
     if(!cv2Enabled())return null;
     const pp=String(paper)==='80'?'80':'58';
     const root=document.createElement('div');
     root.className='coupon-voucher-invoice-print coupon-voucher-physical-render-preview';
     root.dataset.paper=pp;
-    const canvas=renderCouponPhysical(pp);
-    const img=document.createElement('img');
-    img.className='coupon-voucher-physical-render-image';
-    img.src=cv2CanvasToDataURL(canvas);
-    img.alt='Coupon physical print preview';
-    img.draggable=false;
-    root.appendChild(img);
+    const original=cv2State;
+    const selected=cv2ActiveCoupons();
+    const designs=selected.length?selected:[original];
+    designs.forEach((design,index)=>{
+      cv2State=cv2Sanitize(design);
+      const canvas=renderCouponPhysical(pp);
+      const img=document.createElement('img');
+      img.className='coupon-voucher-physical-render-image';
+      img.src=cv2CanvasToDataURL(canvas);
+      img.alt='Coupon '+(index+1)+' physical print preview';
+      img.draggable=false;
+      img.style.display='block';img.style.width='100%';img.style.height='auto';img.style.marginTop=index?'8px':'0';
+      root.appendChild(img);
+    });
+    cv2State=original;
     return root;
+  }
+  function cv2BatchContinuationBytes(paper){
+    const selected=cv2ActiveCoupons();
+    if(!selected.length)return cv2CouponTextBytes(String(paper)==='80'?'80':'58');
+    const original=cv2State, parts=[];
+    try{
+      selected.forEach((design,index)=>{
+        cv2State=cv2Sanitize(design);
+        // In a multi-coupon invoice, do not initialize/cut/feed after every
+        // coupon. Keep coupons contiguous and feed/cut only once at the end.
+        parts.push(cv2CouponTextBytes(paper,{includeInit:index===0,includeFinish:index===selected.length-1}));
+      });
+    }finally{cv2State=original;}
+    return concatBytes(...parts);
   }
 
   window.couponVoucherFromHome=false;
@@ -13365,7 +13453,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.renderCouponPhysical=renderCouponPhysical;
   window.renderCouponPreview=function(){cv2PreviewModal()};
   window.buildCouponVoucherPrintNode=cv2PrintNode;
-  window.couponVoucherContinuationBytes=function(paper){return cv2CouponTextBytes(String(paper)==='80'?'80':'58')};
+  window.couponVoucherContinuationBytes=cv2BatchContinuationBytes;
   window.buildCouponBluetoothBytes=function(paper){return cv2CouponTextBytes(String(paper)==='80'?'80':'58')};
   window.couponVoucherAutoPrintEnabled=cv2Enabled;
   window.couponVoucherPrint=cv2Print;
@@ -14700,6 +14788,31 @@ document.addEventListener('keydown',function(event){
 #sa-after-bill-message-ok:focus-visible{outline:4px solid #fff;outline-offset:4px}
 </style>
 
+
+<style id="coupon-voucher-line-action-button-contrast-fix">
+/* Coupon Voucher only: keep per-line EDIT / SIZE controls readable in Day and Night modes. */
+#coupon-voucher-overlay .cv2-line-actions .cv-mini{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  min-height:34px!important;min-width:0!important;box-sizing:border-box!important;
+  padding:7px 6px!important;border:1px solid transparent!important;border-radius:7px!important;
+  color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;
+  font-size:11px!important;font-weight:900!important;line-height:1.2!important;
+  text-align:center!important;white-space:nowrap!important;opacity:1!important;
+}
+#coupon-voucher-overlay .cv2-line-actions .cv-mini:nth-child(1){
+  background:#334155!important;border-color:#64748b!important;
+}
+#coupon-voucher-overlay .cv2-line-actions .cv-mini:nth-child(2){
+  background:#2563eb!important;border-color:#60a5fa!important;
+}
+#coupon-voucher-overlay .cv2-line-actions .cv-mini:nth-child(3){
+  background:#15803d!important;border-color:#4ade80!important;
+}
+#coupon-voucher-overlay .cv2-line-actions .cv-mini:focus-visible{
+  outline:2px solid #f59e0b!important;outline-offset:2px!important;
+}
+#coupon-voucher-overlay .cv2-line-actions .cv-mini:active{filter:brightness(.9)!important}
+</style>
 </body>
 
 <style id="bs-sticker-content-fit-final">
