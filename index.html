@@ -2013,6 +2013,17 @@ div>
             <div class="amount-display" id="qr-amount">₹ 0.00</div>
             
             <div class="calc-qr-info" id="calc-qr-info" aria-label="Current bill and cash refund details">
+              <div class="calc-approx-profit" id="calc-approx-profit">
+                <div class="calc-approx-profit-main">
+                  <span class="calc-approx-profit-label">APPROX. PROFIT</span>
+                  <strong id="calc-approx-profit-value">₹0.00</strong>
+                </div>
+                <div class="calc-approx-profit-controls">
+                  <label for="calc-approx-profit-percent">%</label>
+                  <input id="calc-approx-profit-percent" type="number" inputmode="decimal" min="0" max="1000" step="0.1" value="5" aria-label="Approximate profit percentage">
+                  <button type="button" id="calc-approx-profit-toggle" aria-pressed="true">ON</button>
+                </div>
+              </div>
               <div class="calc-qr-meta-grid">
                 <div class="calc-qr-meta"><small>DATE</small><b id="calc-qr-date">—</b></div>
                 <div class="calc-qr-meta"><small>TIME</small><b id="calc-qr-time">—</b></div>
@@ -4587,6 +4598,7 @@ async function executeCalculatorPrint(includeQr){
     }
     saveInvoiceSettings('calculator');
     localStorage.removeItem(CAL_CURRENT_BILL_KEY);
+    if(typeof window.saShowAfterBillUserMessage==='function')window.saShowAfterBillUserMessage();
   }catch(err){setPrinterStatus("Print failed: "+(err.message||"Try reconnecting"),"error");}
 }
 // ================================================================
@@ -5465,6 +5477,7 @@ async function printCustomizedInvoice(){
       if(invoiceCustomizationMode==='calculator'){
         saveInvoiceHistoryOnce('calculator',historySaveToken,()=>saveCalculatorInvoiceHistory({editingHistoryId:editingHistoryId,bill:document.getElementById('invoice-no').textContent,upi:x.upi,shop:document.getElementById('invoice-shop').textContent,title:document.getElementById('invoice-title').textContent,discount:x.discount,displaySettings:x.displaySettings||getInvoiceDisplaySettings('calculator')}));
         localStorage.removeItem(CAL_CURRENT_BILL_KEY);
+        if(typeof window.saShowAfterBillUserMessage==='function')window.saShowAfterBillUserMessage();
       }else{
         saveInvoiceHistoryOnce('billing',historySaveToken,()=>replaceOrSaveEditedHistory(x));
         localStorage.removeItem(POS_CURRENT_BILL_KEY);
@@ -5477,6 +5490,7 @@ async function printCustomizedInvoice(){
         if(invoiceCustomizationMode==='calculator'){
           saveInvoiceHistoryOnce('calculator',historySaveToken,()=>saveCalculatorInvoiceHistory({editingHistoryId:editingHistoryId,bill:document.getElementById('invoice-no').textContent,upi:x.upi,shop:document.getElementById('invoice-shop').textContent,title:document.getElementById('invoice-title').textContent,discount:x.discount,displaySettings:x.displaySettings||getInvoiceDisplaySettings('calculator')}));
           localStorage.removeItem('calculator-invoice-current-bill');
+          if(typeof window.saShowAfterBillUserMessage==='function')window.saShowAfterBillUserMessage();
         }else{
           saveInvoiceHistoryOnce('billing',historySaveToken,()=>replaceOrSaveEditedHistory(x));
           localStorage.removeItem('invoice-current-bill');
@@ -8613,8 +8627,12 @@ async function oneTapPrintFromBilling(){
     // If Bluetooth is disconnected or the print fails, keep the payment
     // popup closed so an unprinted bill is never accidentally marked/saved.
     if(printed!==true)return;
-    // After confirmed One Tap Print, open Payment Received + Change Mode popup.
-    openBillingPaymentPopup();
+    // POS Billing sequence: Print -> optional owner message -> OK -> Payment Details.
+    // When the message is disabled, continue directly to Payment Details.
+    const messageShown = typeof window.saShowAfterBillUserMessage === 'function'
+      ? window.saShowAfterBillUserMessage(openBillingPaymentPopup)
+      : false;
+    if(!messageShown) openBillingPaymentPopup();
   }catch(e){
     setPrinterStatus('One Tap Print failed: '+(e.message||e),'error');
   }finally{
@@ -8879,6 +8897,7 @@ function browserPrintPOSInvoice(){
     // Browser print completion is only another trigger; it cannot double-save.
     saveInvoiceHistoryOnce('billing',printToken,()=>savePOSPrintedHistory());
     cleanup();
+    if(typeof window.saShowAfterBillUserMessage==='function')window.saShowAfterBillUserMessage();
   };
   window.print();
 }
@@ -8948,6 +8967,8 @@ async function printPOSInvoice58mm(saveHistory=true){
     }else{
       setPrinterStatus('POS invoice printed only','connected');
     }
+    // Message display is sequenced by oneTapPrintFromBilling after this
+    // successful print returns, so Payment Details cannot open at the same time.
     return true;
   }catch(e){
     setPrinterStatus('Print failed: '+(e.message||'Connect printer'),'error');
@@ -14659,6 +14680,26 @@ document.addEventListener('keydown',function(event){
 }
 </style>
 
+
+<div id="sa-after-bill-user-message" aria-hidden="true">
+ <div class="sa-after-bill-message-card" role="dialog" aria-modal="true" aria-labelledby="sa-after-bill-message-title">
+  <div class="sa-after-bill-message-kicker">BILL PRINTED SUCCESSFULLY</div>
+  <h2 id="sa-after-bill-message-title">💬 OWNER MESSAGE</h2>
+  <div id="sa-after-bill-message-content"></div>
+  <button type="button" id="sa-after-bill-message-ok">OK</button>
+ </div>
+</div>
+<style id="sa-after-bill-user-message-style">
+#sa-after-bill-user-message{display:none;position:fixed;inset:0;z-index:2147483000;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;background:rgba(4,10,22,.88)}
+#sa-after-bill-user-message.open{display:flex}
+#sa-after-bill-user-message .sa-after-bill-message-card{box-sizing:border-box;width:min(760px,96vw);max-height:90dvh;overflow:auto;padding:clamp(20px,4vw,38px);border:3px solid #facc15;border-radius:22px;background:#101827;color:#fff;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+#sa-after-bill-user-message .sa-after-bill-message-kicker{font-size:clamp(12px,2vw,16px);font-weight:900;letter-spacing:1.5px;color:#86efac}
+#sa-after-bill-user-message h2{margin:12px 0 18px;font-size:clamp(21px,4vw,32px);font-weight:950;color:#facc15}
+#sa-after-bill-message-content{font-size:clamp(24px,5vw,42px);line-height:1.45;font-weight:900;white-space:pre-wrap;overflow-wrap:anywhere;color:#fff}
+#sa-after-bill-message-ok{display:block;width:min(360px,100%);min-height:58px;margin:26px auto 0;border:0;border-radius:14px;background:#22c55e;color:#052e16;font-size:clamp(19px,3vw,24px);font-weight:950;cursor:pointer}
+#sa-after-bill-message-ok:focus-visible{outline:4px solid #fff;outline-offset:4px}
+</style>
+
 </body>
 
 <style id="bs-sticker-content-fit-final">
@@ -15467,6 +15508,24 @@ document.addEventListener('keydown',function(event){
     </div>
     <p>Pairing uses a direct WebRTC connection over the local hotspot. QR pairing is a two-way exchange: Main QR → Customer scan → Customer response QR → Main scan. The app cannot switch Android Hotspot ON automatically; please enable it in Android settings.</p>
    </section>
+
+   <section class="sa-setting-card" id="sa-user-message-settings-card">
+    <h3>💬 Message for User — After Bill Print</h3>
+    <p>Bill successfully print ହେବା ପରେ POS screen ରେ ଆପଣଙ୍କ message ଦେଖାଯିବ। ଯେକୌଣସି language ରେ ଲେଖିପାରିବେ।</p>
+    <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;font-weight:800;font-size:12px">
+     <span>Message Display ON/OFF</span>
+     <input id="sa-user-message-enabled" type="checkbox" style="width:22px;height:22px;accent-color:var(--blue)">
+    </label>
+    <label style="display:block;font-size:11px;font-weight:800;margin-top:7px">YOUR MESSAGE
+     <textarea id="sa-user-message-text" rows="5" maxlength="2000" placeholder="ଏଠାରେ ନିଜ message ଲେଖନ୍ତୁ — Odia, English, Hindi କିମ୍ବା ଯେକୌଣସି language..." style="display:block;box-sizing:border-box;width:100%;min-height:110px;margin-top:6px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;line-height:1.5;resize:vertical"></textarea>
+    </label>
+    <div id="sa-user-message-status" class="sa-cd-status" style="margin-top:8px">Message display is OFF</div>
+    <div class="sa-cd-actions">
+     <button class="sa-cd-btn primary" type="button" onclick="saSaveUserMessageSettings()">💾 Save Message</button>
+    </div>
+    <p>ଏହି message କେବଳ POS screen ରେ ଦେଖାଯିବ। Customer bill ରେ print ହେବ ନାହିଁ। Message ର OK ଦବାଇଲେ ମାତ୍ର ବନ୍ଦ ହେବ।</p>
+   </section>
+
   </div>
  </section>
 </div>
@@ -15867,5 +15926,165 @@ body.dark #billing-overlay.open .billing-search-results .billing-result.billing-
   });
   window.addEventListener('pageshow',schedule);
   setTimeout(schedule,250);
+})();
+</script>
+
+<style id="calculator-approx-profit-bar-only">
+/* Calculator QR panel only: approximate-profit strip above DATE/TIME. */
+body:not(.home-mode) #calc-qr-info .calc-approx-profit{
+  width:100%;min-width:0;min-height:38px;box-sizing:border-box;padding:4px 7px;
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  border:1px solid color-mix(in srgb,var(--blue) 42%,var(--border));
+  border-radius:9px;background:var(--surface2);color:var(--text);
+}
+body:not(.home-mode) #calc-qr-info .calc-approx-profit-main{display:flex;flex-direction:column;gap:1px;min-width:0}
+body:not(.home-mode) #calc-qr-info .calc-approx-profit-label{font-size:8px;line-height:1.1;font-weight:900;letter-spacing:.3px;color:var(--muted)}
+body:not(.home-mode) #calc-qr-info #calc-approx-profit-value{font-size:clamp(13px,2vh,18px);line-height:1.1;font-weight:900;color:var(--blue);white-space:nowrap}
+body:not(.home-mode) #calc-qr-info .calc-approx-profit-controls{display:flex;align-items:center;gap:4px;flex:none}
+body:not(.home-mode) #calc-qr-info .calc-approx-profit-controls label{font-size:11px;font-weight:900;color:var(--text)}
+body:not(.home-mode) #calc-qr-info #calc-approx-profit-percent{width:43px;min-width:0;height:25px;padding:2px 3px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:11px;font-weight:800;text-align:center;outline:none}
+body:not(.home-mode) #calc-qr-info #calc-approx-profit-toggle{height:25px;min-width:36px;padding:0 6px;border:1px solid #16a34a;border-radius:6px;background:#dcfce7;color:#166534;font-size:10px;font-weight:900}
+body:not(.home-mode) #calc-qr-info #calc-approx-profit-toggle[aria-pressed="false"]{border-color:var(--border);background:var(--surface);color:var(--muted)}
+body:not(.home-mode) #calc-qr-info .calc-approx-profit.is-hidden #calc-approx-profit-value{visibility:hidden}
+@media(orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  body:not(.home-mode) #calc-qr-info .calc-approx-profit{min-height:31px;padding:2px 5px;gap:3px}
+  body:not(.home-mode) #calc-qr-info .calc-approx-profit-label{font-size:7px}
+  body:not(.home-mode) #calc-qr-info #calc-approx-profit-value{font-size:clamp(11px,1.8vh,15px)}
+  body:not(.home-mode) #calc-qr-info #calc-approx-profit-percent,
+  body:not(.home-mode) #calc-qr-info #calc-approx-profit-toggle{height:22px}
+}
+@media(max-width:390px){body:not(.home-mode) #calc-qr-info .calc-approx-profit{padding:3px 5px;gap:3px}body:not(.home-mode) #calc-qr-info #calc-approx-profit-percent{width:37px}}
+</style>
+<script id="calculator-approx-profit-bar-only-js">
+(function(){
+  'use strict';
+  function init(){
+    const bar=document.getElementById('calc-approx-profit');
+    const value=document.getElementById('calc-approx-profit-value');
+    const percent=document.getElementById('calc-approx-profit-percent');
+    const toggle=document.getElementById('calc-approx-profit-toggle');
+    const amount=document.getElementById('qr-amount');
+    if(!bar||!value||!percent||!toggle||!amount||bar.dataset.ready==='1')return;
+    bar.dataset.ready='1';
+    const money=n=>'₹'+(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    try{const saved=localStorage.getItem('calculator-approx-profit-percent');if(saved!==null&&Number.isFinite(Number(saved)))percent.value=saved;}catch(e){}
+    let enabled=true;
+    try{enabled=localStorage.getItem('calculator-approx-profit-visible')!=='0';}catch(e){}
+    function update(){
+      const base=Number(String(amount.textContent||'').replace(/[^0-9.]/g,''))||0;
+      const pct=Math.max(0,Math.min(1000,Number(percent.value)||0));
+      value.textContent=money(base*pct/100);
+      bar.classList.toggle('is-hidden',!enabled);
+      toggle.textContent=enabled?'ON':'OFF';
+      toggle.setAttribute('aria-pressed',enabled?'true':'false');
+      try{localStorage.setItem('calculator-approx-profit-percent',String(pct));localStorage.setItem('calculator-approx-profit-visible',enabled?'1':'0');}catch(e){}
+    }
+    percent.addEventListener('input',update);
+    toggle.addEventListener('click',function(){enabled=!enabled;update();});
+    if(window.MutationObserver){new MutationObserver(update).observe(amount,{childList:true,characterData:true,subtree:true});}
+    update();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  window.addEventListener('pageshow',init);
+})();
+</script>
+
+
+<style id="calculator-approx-profit-readable-size-v2">
+/* Profit strip readability only. Existing calculator controls and metadata tile sizing remain untouched. */
+body:not(.home-mode) #calc-qr-info .calc-approx-profit{
+  min-height:56px;
+  padding:7px 9px;
+  gap:8px;
+}
+body:not(.home-mode) #calc-qr-info .calc-approx-profit-main{gap:3px}
+body:not(.home-mode) #calc-qr-info .calc-approx-profit-label{
+  font-size:10px;
+  line-height:1.2;
+  letter-spacing:.4px;
+}
+body:not(.home-mode) #calc-qr-info #calc-approx-profit-value{
+  font-size:clamp(24px,3vh,28px);
+  line-height:1.05;
+  font-weight:900;
+  color:#16a765;
+  text-shadow:0 0 0 transparent;
+}
+body.dark:not(.home-mode) #calc-qr-info #calc-approx-profit-value{
+  color:#65e6a7;
+}
+@media(orientation:landscape) and (max-height:800px) and (pointer:coarse){
+  body:not(.home-mode) #calc-qr-info .calc-approx-profit{
+    min-height:47px;
+    padding:5px 8px;
+    gap:6px;
+  }
+  body:not(.home-mode) #calc-qr-info .calc-approx-profit-label{font-size:9px}
+  body:not(.home-mode) #calc-qr-info #calc-approx-profit-value{font-size:clamp(21px,3.2vh,25px)}
+}
+@media(max-width:390px){
+  body:not(.home-mode) #calc-qr-info .calc-approx-profit{min-height:54px;padding:6px 7px}
+  body:not(.home-mode) #calc-qr-info #calc-approx-profit-value{font-size:24px}
+}
+</style>
+
+
+<script id="sa-after-bill-user-message-script">
+(function(){
+ 'use strict';
+ const KEY='sa-after-bill-user-message-settings-v1';
+ const $=id=>document.getElementById(id);
+ function readSettings(){
+  try{
+   const v=JSON.parse(localStorage.getItem(KEY)||'{}');
+   return {enabled:v.enabled===true,message:typeof v.message==='string'?v.message:''};
+  }catch(e){return {enabled:false,message:''};}
+ }
+ function status(){
+  const el=$('sa-user-message-status');if(!el)return;
+  const v=readSettings();
+  el.textContent=v.enabled&&v.message.trim()?'🟢 Message display is ON':'⚪ Message display is OFF';
+ }
+ window.saSaveUserMessageSettings=function(){
+  const enabled=!!$('sa-user-message-enabled')?.checked;
+  const message=String($('sa-user-message-text')?.value||'');
+  try{
+   localStorage.setItem(KEY,JSON.stringify({enabled,message}));
+   status();
+  }catch(e){
+   const el=$('sa-user-message-status');if(el)el.textContent='Could not save message on this device';
+  }
+ };
+ function load(){
+  const v=readSettings();
+  const toggle=$('sa-user-message-enabled'),input=$('sa-user-message-text');
+  if(toggle)toggle.checked=v.enabled;
+  if(input)input.value=v.message;
+  status();
+ }
+ let afterMessageClose=null;
+ window.saShowAfterBillUserMessage=function(onClose){
+  const v=readSettings();
+  if(!v.enabled||!v.message.trim())return false;
+  const layer=$('sa-after-bill-user-message'),content=$('sa-after-bill-message-content');
+  if(!layer||!content)return false;
+  afterMessageClose=typeof onClose==='function'?onClose:null;
+  content.textContent=v.message;
+  layer.classList.add('open');
+  layer.setAttribute('aria-hidden','false');
+  $('sa-after-bill-message-ok')?.focus();
+  return true;
+ };
+ function close(){
+  const layer=$('sa-after-bill-user-message');if(!layer)return;
+  layer.classList.remove('open');
+  layer.setAttribute('aria-hidden','true');
+  const callback=afterMessageClose;
+  afterMessageClose=null;
+  if(callback){try{callback();}catch(e){console.error('After-bill message callback',e);}}
+ }
+ $('sa-after-bill-message-ok')?.addEventListener('click',close);
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+ window.addEventListener('pageshow',load);
 })();
 </script>
