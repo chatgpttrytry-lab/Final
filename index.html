@@ -5120,7 +5120,32 @@ function invoiceStudioKey(mode){return 'invoice-studio-v2-'+(mode==='billing'?'b
 function invoiceStudioMrpKey(mode){return 'invoice-studio-mrp-enabled-v1-'+(mode==='billing'?'billing':'calculator');}
 function invoiceStudioTemplateKey(mode){return invoiceStudioKey(mode)+'-templates';}
 function invoiceStudioRead(mode){let st={};try{st=JSON.parse(localStorage.getItem(invoiceStudioKey(mode))||'{}')||{};}catch(e){};const result={...INVOICE_STUDIO_DEFAULT,...st,cols:{...INVOICE_STUDIO_DEFAULT.cols,...(st.cols||{})},headerAlign:{...INVOICE_STUDIO_DEFAULT.headerAlign,...(st.headerAlign||{})},footerAlign:{...INVOICE_STUDIO_DEFAULT.footerAlign,...(st.footerAlign||{})},headerOrder:Array.isArray(st.headerOrder)?st.headerOrder.slice():INVOICE_STUDIO_DEFAULT.headerOrder.slice(),footerOrder:Array.isArray(st.footerOrder)?st.footerOrder.slice():INVOICE_STUDIO_DEFAULT.footerOrder.slice()};try{const mrp=localStorage.getItem(invoiceStudioMrpKey(mode));if(mrp==='true'||mrp==='false')result.cols.price=mrp==='true';}catch(e){};return result;}
-function invoiceStudioWrite(mode,st){try{localStorage.setItem(invoiceStudioKey(mode),JSON.stringify(st));if(st&&st.cols&&typeof st.cols.price==='boolean')localStorage.setItem(invoiceStudioMrpKey(mode),String(st.cols.price));}catch(e){};}
+function invoiceStudioWrite(mode,st,persistMrp=false){
+  try{
+    const m=mode==='billing'?'billing':'calculator';
+    const mrpKey=invoiceStudioMrpKey(m);
+    let savedMrp=localStorage.getItem(mrpKey);
+    // Older saved data may not have the independent MRP key yet. In that
+    // case, preserve the previous stored setting instead of trusting an
+    // unrelated template/design snapshot that is about to be written.
+    if(savedMrp!=='true'&&savedMrp!=='false'){
+      let previous={};
+      try{previous=JSON.parse(localStorage.getItem(invoiceStudioKey(m))||'{}')||{};}catch(e){}
+      savedMrp=typeof previous?.cols?.price==='boolean'
+        ? String(previous.cols.price)
+        : String(INVOICE_STUDIO_DEFAULT.cols.price!==false);
+    }
+    const safeSettings={...st,cols:{...(st?.cols||{})}};
+    // MRP is an independent preference: template, reset, preview and design
+    // writes must not silently change the saved MRP ON/OFF state.
+    safeSettings.cols.price=savedMrp==='true';
+    localStorage.setItem(invoiceStudioKey(m),JSON.stringify(safeSettings));
+    // Only the actual MRP checkbox persistence path may update this key.
+    if(persistMrp && st?.cols && typeof st.cols.price==='boolean'){
+      localStorage.setItem(mrpKey,String(st.cols.price));
+    }
+  }catch(e){}
+}
 function invoiceStudioGet(){const m=invoiceCustomizationMode==='billing'?'billing':'calculator',base=invoiceStudioRead(m);const $=id=>document.getElementById(id);base.paper=$('invoice-studio-paper')?.value||base.paper;base.nameMode=$('invoice-studio-name-mode')?.value||base.nameMode;base.fit=$('invoice-studio-fit')?.value||base.fit;base.decimal=$('invoice-studio-decimal')?.value||base.decimal;base.autoFit=$('invoice-studio-auto')?.checked!==false;base.cols={item:$('invoice-studio-col-item')?.checked!==false,price:$('invoice-studio-col-price')?.checked!==false,rate:$('invoice-studio-col-rate')?.checked!==false,qty:$('invoice-studio-col-qty')?.checked!==false,total:$('invoice-studio-col-total')?.checked!==false};base.zoom=Number(base.zoom)||1;return base;}
 function invoiceStudioApply(st,renderLists=true){const $=id=>document.getElementById(id);st={...st,cols:{...INVOICE_STUDIO_DEFAULT.cols,...(st.cols||{})}};/* MRP visibility is independent per Studio: always restore it from the active branch's own persistent key, never from a shared/template snapshot. */try{const savedMrp=localStorage.getItem(invoiceStudioMrpKey(invoiceCustomizationMode));if(savedMrp==='true'||savedMrp==='false')st.cols.price=savedMrp==='true';}catch(e){}if($('invoice-studio-paper'))$('invoice-studio-paper').value=st.paper||'58';if($('invoice-studio-name-mode'))$('invoice-studio-name-mode').value=st.nameMode||'auto';if($('invoice-studio-fit'))$('invoice-studio-fit').value=st.fit||'auto';if($('invoice-studio-decimal'))$('invoice-studio-decimal').value=st.decimal||'smart';if($('invoice-studio-auto'))$('invoice-studio-auto').checked=st.autoFit!==false;Object.entries(st.cols).forEach(([k,v])=>{const e=$('invoice-studio-col-'+k);if(e)e.checked=!!v;});const b=$('invoice-studio-template-branch');if(b)b.value=invoiceCustomizationMode==='billing'?'POS / Billing':'Calculator';const paper=$('invoice-live-physical-preview');if(paper){paper.classList.toggle('paper-58',String(st.paper)!=='80');paper.classList.toggle('paper-80',String(st.paper)==='80');paper.style.transform='scale('+(Number(st.zoom)||1)+')';paper.style.transformOrigin='top center';paper.style.marginBottom=((Number(st.zoom)||1)-1)*120+'px';}const status=$('invoice-studio-preview-status');if(status)status.textContent=(String(st.paper)==='80'?'80mm / 3-inch':'58mm / 2-inch')+' • branch-isolated physical receipt layout';if(renderLists)invoiceStudioRenderOrderLists(st);}
 function invoiceStudioRenderOrderLists(st){
@@ -5177,7 +5202,7 @@ function invoiceStudioPersist(){
   const st=invoiceStudioGet();
   const after=JSON.stringify(st);
   if(before!==after) invoiceStudioPushUndo(before);
-  invoiceStudioWrite(invoiceCustomizationMode,st);
+  invoiceStudioWrite(invoiceCustomizationMode,st,true);
   invoiceStudioLastSnapshot=after;
   invoiceStudioApply(st);
   try{localStorage.setItem('invoice-studio-printer-paper-'+(invoiceCustomizationMode==='billing'?'billing':'calculator'),String(st.paper||'58'));}catch(e){}
