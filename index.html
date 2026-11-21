@@ -4587,7 +4587,20 @@ async function executeCalculatorPrint(includeQr){
     const total=billTotal;
     const calcStudio=invoiceStudioEffectiveRead('calculator'); const calcPaper=String(calcStudio.paper)==='80'?'80':'58'; const x={mrpTotal,billTotal,subtotal:mrpTotal,discount,total,upi:printUpi,settingsMode:'calculator',paymentMode:'Cash',calculatorQrChoice:!!includeQr,displaySettings:{...getInvoiceDisplaySettings('calculator'),...calcStudio,paper:calcPaper}};
     setPrinterStatus("Printing invoice ("+(calcPaper==='80'?'80mm / 3-inch':'58mm / 2-inch')+")…");
-    await writeBluetooth(makeCustomizedReceiptBytes(x));
+    let invoiceBytes=makeCustomizedReceiptBytes(x);
+    if(typeof window.couponVoucherAutoPrintEnabled==='function' && window.couponVoucherAutoPrintEnabled()){
+      try{
+        const tail=new Uint8Array([0x1b,0x64,0x05,0x1d,0x56,0x00]);
+        if(invoiceBytes.length>=tail.length){
+          let same=true;
+          for(let i=0;i<tail.length;i++){if(invoiceBytes[invoiceBytes.length-tail.length+i]!==tail[i]){same=false;break;}}
+          if(same)invoiceBytes=invoiceBytes.slice(0,invoiceBytes.length-tail.length);
+        }
+        const couponBytes=typeof window.couponVoucherContinuationBytes==='function'?window.couponVoucherContinuationBytes(calcPaper):new Uint8Array();
+        if(couponBytes&&couponBytes.length)invoiceBytes=concatBytes(invoiceBytes,couponBytes);
+      }catch(couponErr){console.warn('Calculator coupon physical print:',couponErr)}
+    }
+    await writeBluetooth(invoiceBytes);
     setPrinterStatus("Printed successfully","connected");
     // Physical print and history use ONE save path. A second callback/path cannot
     // create another Calculator History record for the same print operation.
@@ -5322,7 +5335,7 @@ function invoiceStudioRenderPreview(){
       }
     }
     try{
-      if(invoiceCustomizationMode==='billing' && typeof window.buildCouponVoucherPrintNode==='function' && typeof window.couponVoucherAutoPrintEnabled==='function' && window.couponVoucherAutoPrintEnabled()){
+      if(typeof window.buildCouponVoucherPrintNode==='function' && typeof window.couponVoucherAutoPrintEnabled==='function' && window.couponVoucherAutoPrintEnabled()){
         const couponPreview=window.buildCouponVoucherPrintNode(String(previewSt.paper||'58')==='80'?'80':'58');
         if(couponPreview){couponPreview.style.display='block';couponPreview.style.marginTop='8px';couponPreview.style.width='100%';target.appendChild(couponPreview);}
       }
@@ -5538,7 +5551,21 @@ async function printCustomizedInvoice(){
     saveInvoiceSettings(invoiceCustomizationMode);
     if(printerReady()){
       setPrinterStatus('Printing invoice…');
-      await writeBluetooth(makeCustomizedReceiptBytes(x));
+      let invoiceBytes=makeCustomizedReceiptBytes(x);
+      if(typeof window.couponVoucherAutoPrintEnabled==='function' && window.couponVoucherAutoPrintEnabled()){
+        try{
+          const paper=String(x.displaySettings?.paper||'58')==='80'?'80':'58';
+          const tail=new Uint8Array([0x1b,0x64,0x05,0x1d,0x56,0x00]);
+          if(invoiceBytes.length>=tail.length){
+            let same=true;
+            for(let i=0;i<tail.length;i++){if(invoiceBytes[invoiceBytes.length-tail.length+i]!==tail[i]){same=false;break;}}
+            if(same)invoiceBytes=invoiceBytes.slice(0,invoiceBytes.length-tail.length);
+          }
+          const couponBytes=typeof window.couponVoucherContinuationBytes==='function'?window.couponVoucherContinuationBytes(paper):new Uint8Array();
+          if(couponBytes&&couponBytes.length)invoiceBytes=concatBytes(invoiceBytes,couponBytes);
+        }catch(e){console.warn('Coupon invoice print:',e)}
+      }
+      await writeBluetooth(invoiceBytes);
       setPrinterStatus('Printed successfully','connected');
       if(invoiceCustomizationMode==='calculator'){
         saveInvoiceHistoryOnce('calculator',historySaveToken,()=>saveCalculatorInvoiceHistory({editingHistoryId:editingHistoryId,bill:document.getElementById('invoice-no').textContent,upi:x.upi,shop:document.getElementById('invoice-shop').textContent,title:document.getElementById('invoice-title').textContent,discount:x.discount,displaySettings:x.displaySettings||getInvoiceDisplaySettings('calculator')}));
@@ -5550,9 +5577,18 @@ async function printCustomizedInvoice(){
       }
       invoiceEditSnapshot=null; editingHistoryId=null; closeInvoiceCustomizer();
     }else{
+      let couponPrintNode=null;
+      try{
+        if(typeof window.buildCouponVoucherPrintNode==='function' && typeof window.couponVoucherAutoPrintEnabled==='function' && window.couponVoucherAutoPrintEnabled()){
+          const paper=String(x.displaySettings?.paper||'58')==='80'?'80':'58';
+          couponPrintNode=window.buildCouponVoucherPrintNode(paper);
+          if(couponPrintNode)document.getElementById('invoice-print-sheet')?.appendChild(couponPrintNode);
+        }
+      }catch(e){console.warn('Coupon browser print:',e)}
       setTimeout(()=>window.print(),120);
       window.onafterprint=()=>{
         window.onafterprint=null;
+        if(couponPrintNode&&couponPrintNode.parentNode)couponPrintNode.parentNode.removeChild(couponPrintNode);
         if(invoiceCustomizationMode==='calculator'){
           saveInvoiceHistoryOnce('calculator',historySaveToken,()=>saveCalculatorInvoiceHistory({editingHistoryId:editingHistoryId,bill:document.getElementById('invoice-no').textContent,upi:x.upi,shop:document.getElementById('invoice-shop').textContent,title:document.getElementById('invoice-title').textContent,discount:x.discount,displaySettings:x.displaySettings||getInvoiceDisplaySettings('calculator')}));
           localStorage.removeItem('calculator-invoice-current-bill');
@@ -12659,6 +12695,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       return Array.isArray(a)?a:[];
     }catch(e){return[]}
   }
+  function studioMode(){
+    return (typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='billing')?'billing':'calculator';
+  }
+  function selectionKey(){return 'invoice_studio_coupon_selection_'+studioMode()+'_v1';}
+  function activeListKey(){return 'pos_coupon_voucher_active_list_'+studioMode()+'_v1';}
+  function activeOneKey(){return 'pos_coupon_voucher_active_'+studioMode()+'_v1';}
+  function selectedCouponNames(){
+    try{const a=JSON.parse(localStorage.getItem(selectionKey())||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}
+  }
+  function saveSelectedCouponNames(names){
+    try{localStorage.setItem(selectionKey(),JSON.stringify(Array.from(new Set(names.map(String)))))}catch(e){}
+  }
   function esc(v){
     return String(v==null?'':v).replace(/[&<>"']/g,function(c){
       return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
@@ -12671,26 +12719,32 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       box.innerHTML='<div class="is-coupon-card-empty">No saved coupon designs yet.<br>Open Coupon Voucher and use SAVE AS.</div>';
       return;
     }
+    const selectedNames=selectedCouponNames();
     box.innerHTML=a.map((x,i)=>{
       const paper=String(x.paper)==='80'?'80mm / 3-inch':'AUTO / 58mm';
+      const name=String(x.name||('Coupon '+(i+1)));
+      const checked=selectedNames.includes(name)?' checked':'';
       return '<div class="is-coupon-card">'+
-        '<div><div class="is-coupon-card-name">🎟️ '+esc(x.name||('Coupon '+(i+1)))+'</div>'+
+        '<div><div class="is-coupon-card-name">🎟️ '+esc(name)+'</div>'+
         '<div class="is-coupon-card-meta">'+paper+' • '+(Array.isArray(x.texts)?x.texts.length:0)+' text lines</div>'+
-        '<label class="is-coupon-card-select"><input type="checkbox" class="is-coupon-select" value="'+i+'"> Select for billing</label></div>'+
+        '<label class="is-coupon-card-select"><input type="checkbox" class="is-coupon-select" value="'+i+'" data-coupon-name="'+esc(name)+'"'+checked+'> Select for billing</label></div>'+
         '<div class="is-coupon-card-acts">'+
         '<button class="use" type="button" onclick="invoiceStudioUseCoupon('+i+')">USE</button>'+
         '<button type="button" onclick="invoiceStudioEditCoupon('+i+')">EDIT</button>'+
         '</div></div>';
     }).join('');
+    box.querySelectorAll('.is-coupon-select').forEach(input=>input.addEventListener('change',function(){
+      const names=Array.from(box.querySelectorAll('.is-coupon-select:checked')).map(el=>el.dataset.couponName||'');
+      saveSelectedCouponNames(names);
+    }));
   }
 
   window.invoiceStudioUpdateCouponButton=function(){
     const b=$('invoice-studio-coupon-button');
-    if(b)b.style.display=(typeof invoiceCustomizationMode!=='undefined' && invoiceCustomizationMode==='billing')?'inline-flex':'none';
+    if(b)b.style.display='inline-flex';
   };
   window.invoiceStudioCouponPickerRefresh=render;
   window.invoiceStudioOpenCouponPicker=function(){
-    if(typeof invoiceCustomizationMode!=='undefined' && invoiceCustomizationMode!=='billing')return;
     render();
     const o=$('invoice-studio-coupon-picker');
     if(o){o.classList.add('open');o.setAttribute('aria-hidden','false');}
@@ -12703,15 +12757,15 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const selected=(Array.isArray(items)?items:[]).filter(x=>x&&Array.isArray(x.texts));
     if(!selected.length){alert('Please select at least one saved coupon.');return;}
     try{
+      localStorage.setItem(activeListKey(),JSON.stringify(selected));
+      localStorage.setItem(activeOneKey(),JSON.stringify(selected[0]));
+      /* Keep legacy keys updated for older builds while each Studio reads its own isolated keys. */
       localStorage.setItem('pos_coupon_voucher_active_list_v1',JSON.stringify(selected));
       localStorage.setItem('pos_coupon_voucher_active_v1',JSON.stringify(selected[0]));
       localStorage.setItem('pos_coupon_voucher_v1',JSON.stringify({paper:selected[0].paper||'auto',texts:Array.isArray(selected[0].texts)?selected[0].texts:[]}));
+      saveSelectedCouponNames(selected.map(x=>x.name||''));
     }catch(e){}
     invoiceStudioCloseCouponPicker();
-    if(typeof window.openCouponVoucher==='function'){
-      window.couponVoucherFromStudio=true;
-      window.openCouponVoucher();
-    }
   }
   window.invoiceStudioUseCoupon=function(i){const x=couponLibrary()[i];if(!x)return;activateCoupons([x]);};
   window.invoiceStudioUseSelectedCoupons=function(){
@@ -12719,7 +12773,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const indexes=Array.from(box.querySelectorAll('.is-coupon-select:checked')).map(e=>Number(e.value)).filter(Number.isInteger);
     const lib=couponLibrary();activateCoupons(indexes.map(i=>lib[i]).filter(Boolean));
   };
-  window.invoiceStudioEditCoupon=window.invoiceStudioUseCoupon;
+  window.invoiceStudioEditCoupon=function(i){
+    const x=couponLibrary()[i];if(!x)return;
+    try{localStorage.setItem(activeListKey(),JSON.stringify([x]));localStorage.setItem(activeOneKey(),JSON.stringify(x));}catch(e){}
+    invoiceStudioCloseCouponPicker();
+    if(typeof window.openCouponVoucher==='function'){window.couponVoucherFromStudio=true;window.openCouponVoucher();}
+  };
   window.invoiceStudioNewCouponFromStudio=function(){
     invoiceStudioCloseCouponPicker();
     if(typeof window.openCouponVoucher==='function'){
@@ -12848,8 +12907,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     try{
       /* The Invoice Studio selection is the active voucher. Keep it as the
          source of truth when the editor is closed and opened again. */
-      const activeList=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_v1')||'null');
-      const active=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_v1')||'null');
+      const mode=(typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='billing')?'billing':'calculator';
+      const activeList=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_'+mode+'_v1')||'null');
+      const active=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_'+mode+'_v1')||'null');
       const raw=(Array.isArray(activeList)&&activeList.length)?activeList[0]:(active||JSON.parse(localStorage.getItem(CV2_KEY)||'null'));
       if(raw)cv2State=cv2Sanitize(raw);
     }catch(e){}
@@ -12884,14 +12944,17 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     try{
       localStorage.setItem(CV2_KEY,JSON.stringify(cv2State));
       /* Keep an already-selected Studio voucher in sync with editor changes. */
-      const activeRaw=localStorage.getItem('pos_coupon_voucher_active_v1');
+      const mode=(typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='billing')?'billing':'calculator';
+      const oneKey='pos_coupon_voucher_active_'+mode+'_v1';
+      const listKey='pos_coupon_voucher_active_list_'+mode+'_v1';
+      const activeRaw=localStorage.getItem(oneKey);
       if(activeRaw){
         let active={};
         try{active=JSON.parse(activeRaw)||{}}catch(e){}
         const updated={...active,...cv2State};
-        localStorage.setItem('pos_coupon_voucher_active_v1',JSON.stringify(updated));
-        let activeList=[];try{activeList=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_v1')||'[]')}catch(e){}
-        if(Array.isArray(activeList)&&activeList.length){activeList[0]={...activeList[0],...cv2State};localStorage.setItem('pos_coupon_voucher_active_list_v1',JSON.stringify(activeList));}
+        localStorage.setItem(oneKey,JSON.stringify(updated));
+        let activeList=[];try{activeList=JSON.parse(localStorage.getItem(listKey)||'[]')}catch(e){}
+        if(Array.isArray(activeList)&&activeList.length){activeList[0]={...activeList[0],...cv2State};localStorage.setItem(listKey,JSON.stringify(activeList));}
       }
       const en=cv$('cv-enabled');
       if(en)localStorage.setItem('pos_coupon_voucher_enabled_v1',en.checked?'1':'0');
@@ -13275,15 +13338,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function cv2ActiveCoupons(){
     try{
-      const list=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_v1')||'null');
+      const mode=(typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='billing')?'billing':'calculator';
+      const list=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_list_'+mode+'_v1')||'null');
       if(Array.isArray(list)&&list.length)return list.filter(x=>x&&Array.isArray(x.texts));
-      const one=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_v1')||'null');
+      const one=JSON.parse(localStorage.getItem('pos_coupon_voucher_active_'+mode+'_v1')||'null');
       return one&&Array.isArray(one.texts)?[one]:[];
     }catch(e){return[]}
   }
   function cv2Enabled(){
     try{
-      if(localStorage.getItem('pos_coupon_voucher_enabled_v1')!=='1')return false;
+      const mode=(typeof invoiceCustomizationMode!=='undefined'&&invoiceCustomizationMode==='billing')?'billing':'calculator';
+      const enabledKey=mode==='billing'?'pos_coupon_voucher_enabled_v1':'calculator_coupon_voucher_enabled_v1';
+      if(localStorage.getItem(enabledKey)!=='1')return false;
       const list=cv2ActiveCoupons();
       if(list.length)return list.some(x=>x.texts.some(t=>t&&t.enabled!==false&&String(t.text||'').trim()));
       return cv2State.texts.some(t=>String(t.text||'').trim());
